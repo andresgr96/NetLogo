@@ -326,7 +326,7 @@ to movePedestrians
 
      ;if walking vertically then check the vertical permission to cross
 
-    (ifelse any? other pedestrians with [xcor = newX and ycor = newY] or (any? cars-on patch-ahead 1 or any? cars-on patch-ahead 2) or ((class = "vertical" and freeToCrossVertically = false) or (class = "horizontal" and freeToCrossHorizontally = false))
+    (ifelse any? other pedestrians with [xcor = newX and ycor = newY] or (any? cars-on patch-ahead 1 or any? cars-on patch-ahead 2)) or ((class = "vertical" and freeToCrossVertically = false) or (class = "horizontal" and freeToCrossHorizontally = false)
       [
         set moving? false
       ]
@@ -353,7 +353,7 @@ to movePedestrians
           ]
         )
       ]
-    )
+
   ]
 end
 

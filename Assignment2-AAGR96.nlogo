@@ -1,4 +1,4 @@
-globals [lightCounter]
+globals [lightCounter pedestrianWaitingTime carWaitingTime]
 breed [sceneObjects sceneObject]
 breed [cars car]
 breed [pedestrians pedestrian]
@@ -48,6 +48,8 @@ to setup
   setupCars
   setupTraffickLights
   set lightCounter 0
+  set pedestrianWaitingTime 0
+  set carWaitingTime 0
 end
 
 to setupWorld
@@ -308,23 +310,26 @@ to movePedestrians
     let freeToCrossVertically true
     let freeToCrossHorizontally true
 
-    ask vLight
+    if turnLights?
     [
-      if lightcolor = -1                                ;if the light ahead is red, then the car is no longer free to cross. No need to set back to true since this function is in go and the variable gets set back to true each time its called.
+      ask vLight
       [
-        set freeToCrossVertically false
+        if lightcolor = -1                                ;if the light ahead is red, then the car is no longer free to cross. No need to set back to true since this function is in go and the variable gets set back to true each time its called.
+        [
+          set freeToCrossVertically false
+        ]
+      ]
+
+      ask hLight
+      [
+        if lightcolor = -1                                ;if the light ahead is red, then the car is no longer free to cross. No need to set back to true since this function is in go and the variable gets set back to true each time its called.
+        [
+          set freeToCrossHorizontally false
+        ]
       ]
     ]
-
-    ask hLight
-    [
-      if lightcolor = -1                                ;if the light ahead is red, then the car is no longer free to cross. No need to set back to true since this function is in go and the variable gets set back to true each time its called.
-      [
-        set freeToCrossHorizontally false
-      ]
-    ]
-
      ;if walking vertically then check the vertical permission to cross
+
 
     (ifelse any? other pedestrians with [xcor = newX and ycor = newY] or (any? cars-on patch-ahead 1 or any? cars-on patch-ahead 2) or ((class = "vertical" and freeToCrossVertically = false) or (class = "horizontal" and freeToCrossHorizontally = false))
       [
@@ -354,6 +359,12 @@ to movePedestrians
         )
       ]
     )
+
+    if not moving?
+    [
+     set pedestrianWaitingTime pedestrianWaitingTime + 1
+    ]
+
   ]
 end
 
@@ -411,8 +422,22 @@ to moveCars
       set moving? true
       forward 1
      ]
+    if not moving?
+    [
+     set carWaitingTime carWaitingTime + 1
+    ]
   ]
   tick
+end
+
+to-report avgCarWaitingTime
+    let allCars count turtles with [breed = cars]
+    report (carWaitingTime / allCars)
+end
+
+to-report avgPedestrianWaitingTime
+    let allPeds count turtles with [breed = pedestrians]
+    report (pedestrianWaitingTime / allPeds)
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -485,7 +510,7 @@ numberOfCars
 numberOfCars
 0
 50
-1.0
+50.0
 1
 1
 NIL
@@ -517,7 +542,7 @@ numberOfPedestrians
 numberOfPedestrians
 0
 100
-1.0
+75.0
 1
 1
 NIL
@@ -532,7 +557,7 @@ lightDuration
 lightDuration
 0
 500
-53.0
+75.0
 1
 1
 NIL
@@ -545,7 +570,7 @@ SWITCH
 183
 turnLights?
 turnLights?
-0
+1
 1
 -1000
 
@@ -567,6 +592,28 @@ MONITOR
 140
 Cars Moving
 count turtles with [breed = cars and moving? = true]
+17
+1
+11
+
+MONITOR
+950
+155
+1107
+200
+Average Car Waiting Time
+avgCarWaitingTime
+17
+1
+11
+
+MONITOR
+950
+215
+1142
+260
+Average Pedestrian Waiting Time
+avgPedestrianWaitingTime
 17
 1
 11
@@ -977,6 +1024,24 @@ NetLogo 6.3.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="Traffick Ligts" repetitions="10" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>avgCarWaitingTime</metric>
+    <metric>avgPedestrianWaitingTime</metric>
+    <enumeratedValueSet variable="lightDuration">
+      <value value="75"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="numberOfCars" first="10" step="20" last="50"/>
+    <steppedValueSet variable="numberOfPedestrians" first="25" step="25" last="75"/>
+    <enumeratedValueSet variable="turnLights?">
+      <value value="true"/>
+      <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default

@@ -3,58 +3,64 @@ breed [normalHumans normalHuman]
 breed [immoralHumans immoralHuman]
 breed[camps camp]
 
+
 normalHumans-own
 [
-  age
-  sex
-  energy
-  hunger
-  planting
-  temperature
-  moralLevel
-  health
-  backpack
-  jobAssigned
-  working?
-  alive?
-  survivalCamp
+  age                                                             ;how old the human is and will affect energy and health
+  energy                                                          ;how much stamina a human has, energy will be needed to perform any action like farming
+  hunger                                                          ;the need for food a human has, and affects energy and health
+  planting                                                        ;the need for soil a human has, affects health
+  temperature                                                     ;the temperature of a human, affects health and the need for wood + water
+  sickness                                                        ;the physical wellbeing of the human in terms of diseases, affects need for herbs and health
+  moralLevel                                                      ;how "good or bad" a human is, affects the probabilities of choosing survival actions
+  mentalHealth                                                    ;the state of the mental health of the human, affects the moral level range
+  health                                                          ;the overall health of the human, affects moral level value
+  backpack                                                        ;the personal storage of a human for resources
+  jobAssigned                                                     ;the type of job currently assigned to the human
+  working?                                                        ;if the human is currently on a job
+  alive?                                                          ;if the human is alive or ded
+  survivalCamp                                                    ;the survival camp the human is part of
 ]
 
 immoralHumans-own
 [
-  age
-  sex
-  energy
-  hunger
-  planting
-  temperature
-  moralLevel
-  health
-  backpack
-  jobAssigned
-  survivalCamp
-  working?
-  alive?
+  age                                                             ;how old the human is and will affect energy and health
+  energy                                                          ;how much stamina a human has, energy will be needed to perform any action like farming
+  hunger                                                          ;the need for food a human has, and affects energy and health
+  planting                                                        ;the need for soil a human has, affects health
+  temperature                                                     ;the temperature of a human, affects health and the need for wood + water
+  sickness                                                        ;the physical wellbeing of the human in terms of diseases, affects need for herbs and health
+  moralLevel                                                      ;how "good or bad" a human is, affects the probabilities of choosing survival actions
+  mentalHealth                                                    ;the state of the mental health of the human, affects the moral level range
+  health                                                          ;the overall health of the human, affects moral level value
+  backpack                                                        ;the personal storage of a human for resources
+  jobAssigned                                                     ;the type of job currently assigned to the human
+  working?                                                        ;if the human is currently on a job
+  alive?                                                          ;if the human is alive or ded
+  survivalCamp                                                    ;the survival camp the human is part of
 ]
 
-
+                                                                  ;adding variables to patches in order for them to be able to act as survival camps too
 patches-own
 [
-  camp?
-  campId
-  numberOfHabitants
-  commonWater
-  commonWood
-  commonSoil
-  commonHerbs
-  waterJobs
-  woodJobs
-  soilJobs
-  herbsJobs
-  waterProduction
-  woodProduction
-  soilProduction
-  herbsProduction
+  camp?                                                           ;is the patch a survival camp
+  campId                                                          ;identifies each camp
+  numberOfHabitants                                               ;the current number of habitants of the camp
+  commonWater                                                     ;current amount of water in the camps common storage
+  commonWood                                                      ;current amount of wood in the camps common storage
+  commonFood                                                      ;current amount of food in the camps common storage
+  commonHerbs                                                     ;current amount of herbs in the camps common storage
+  commonSoil                                                      ;current amount of soil in the camps common storage
+  waterJobs                                                       ;current amount of available jobs that produce water
+  woodJobs                                                        ;current amount of available jobs that produce wood
+  foodJobs                                                        ;current amount of available jobs that produce food
+  herbsJobs                                                       ;current amount of available jobs that produce herbs
+  soilJobs                                                        ;current amount of available jobs that produce soil
+  waterProduction                                                 ;production rate of water for any water job
+  woodProduction                                                  ;production rate of wood for any wood job
+  foodProduction                                                  ;production rate of food for any water job
+  herbsProduction                                                 ;production rate of herbs for any herbs job
+  soilProduction                                                  ;production rate of soil for any soil job
 ]
 
 
@@ -65,13 +71,13 @@ to setup
 end
 
 to setupWorld
-  ask patches                      ;setup buildings
+  ask patches                                                                       ;setup areas outside of camps
   [
     set pcolor 52
     set camp? false
   ]
 
-  ask patches with [pxcor < -10 and pxcor > -40 and pycor < -10 and pycor > -40]
+  ask patches with [pxcor < -10 and pxcor > -40 and pycor < -10 and pycor > -40]    ;set up survival camp 1
   [
     set pcolor 64
     set camp? true
@@ -81,14 +87,21 @@ to setupWorld
     set woodProduction 70
     set soilProduction 70
     set herbsProduction 70
+    set foodProduction 70
     set commonWater 1000
     set commonWood  1000
-    set commonSoil  1000
+    set commonFood  1000
     set commonHerbs 1000
+    set commonSoil  1000
+    set waterJobs 5
+    set woodJobs 5
+    set foodJobs 5
+    set herbsJobs 5
+    set soilJobs 5
   ]
 
 
-  ask patches with [pxcor < -10 and pxcor > -40 and pycor < 40 and pycor > 10]
+  ask patches with [pxcor < -10 and pxcor > -40 and pycor < 40 and pycor > 10]     ;set up survival camp 2
   [
     set pcolor 64
     set camp? true
@@ -98,13 +111,20 @@ to setupWorld
     set woodProduction 100
     set soilProduction 70
     set herbsProduction 70
+    set foodProduction 70
     set commonWater 1000
     set commonWood  1000
     set commonSoil  1000
     set commonHerbs 1000
+    set commonSoil  1000
+    set waterJobs 5
+    set woodJobs 5
+    set foodJobs 5
+    set herbsJobs 5
+    set soilJobs 5
   ]
 
-  ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 10]
+  ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 10]     ;set up survival camp 3
   [
     set pcolor 64
     set camp? true
@@ -114,13 +134,20 @@ to setupWorld
     set woodProduction 70
     set soilProduction 100
     set herbsProduction 70
+    set foodProduction 70
     set commonWater 1000
     set commonWood  1000
-    set commonSoil  1000
+    set commonFood  1000
     set commonHerbs 1000
+    set commonSoil  1000
+    set waterJobs 5
+    set woodJobs 5
+    set foodJobs 5
+    set herbsJobs 5
+    set soilJobs 5
   ]
 
-  ask patches with [pxcor < 40 and pxcor > 10 and pycor < -10 and pycor > -40]
+  ask patches with [pxcor < 40 and pxcor > 10 and pycor < -10 and pycor > -40]    ;set up survival camp 4
   [
     set pcolor 64
     set camp? true
@@ -130,21 +157,72 @@ to setupWorld
     set woodProduction 70
     set soilProduction 70
     set herbsProduction 100
+    set foodProduction 70
     set commonWater 1000
     set commonWood  1000
     set commonSoil  1000
     set commonHerbs 1000
+    set commonSoil  1000
+    set waterJobs 5
+    set woodJobs 5
+    set foodJobs 5
+    set herbsJobs 5
+    set soilJobs 5
   ]
+end
+
+
+to setupHumans
+  let randomN random 101
+
+  create-immoralHumans (population * (percOfImmoral / 100))
+  [
+    set alive? true
+    set working? false
+    set age getAge
+  ]
+
+  create-normalHumans (population - (population * (percOfImmoral / 100)))
+  [
+
+  ]
+end
+
+to-report getAge
+  let n random 101
+  let under20 33
+  let under40 65
+  let under60 78
+  let under80 100
+  let ageI 0
+
+  (ifelse n < under20
+    [
+      set ageI random 20
+    ]
+    under40 > n and n > under20
+    [
+    set ageI 20 + (random (39 - 20))
+    ]
+    under60 > n  and n > under40
+    [
+    set ageI 40 + (random (59 - 40))
+    ]
+    under80 > n and n > under60
+    [
+    set ageI 60 + (random (79 - 60))
+    ])
+  report ageI
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
 10
-1026
-827
+723
+524
 -1
 -1
-8.0
+5.0
 1
 10
 1
@@ -180,6 +258,36 @@ NIL
 NIL
 NIL
 1
+
+SLIDER
+19
+22
+191
+55
+percOfImmoral
+percOfImmoral
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+19
+68
+191
+101
+population
+population
+1
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?

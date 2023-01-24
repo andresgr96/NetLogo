@@ -70,6 +70,7 @@ to setup
   clear-all
   reset-ticks
   setupWorld
+  setupHumans
 end
 
 to setupWorld
@@ -180,7 +181,7 @@ to setupHumans
   create-immoralHumans (population * (percOfImmoral / 100))
   [
     set shape "person"
-    set color gray
+    set color red
     set alive? true
     set working? false
     set age getAge
@@ -201,7 +202,7 @@ to setupHumans
   create-normalHumans (population - (population * (percOfImmoral / 100)))
   [
     set shape "person"
-    set color gray
+    set color green
     set alive? true
     set working? false
     set age getAge
@@ -219,6 +220,9 @@ to setupHumans
     findSurvivalCamp
   ]
 end
+
+to go
+
 
 to-report getAge
   let n random 101
@@ -248,14 +252,24 @@ to-report getAge
 end
 
 to findSurvivalCamp
-  s
+  set xcor random-xcor
+  set ycor random-ycor
+end
 
+to explore
+  ask turtles with [breed = normalHumans or breed = immoralHumans]
+  [
+    let newxcor xcor + (-1 + (random (1 - (-1))))
+    let newycor ycor + (-1 + (random (1 - (-1))))
+    set xcor newxcor
+    set ycor newycor
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
+207
 10
-723
+720
 524
 -1
 -1
@@ -305,7 +319,7 @@ percOfImmoral
 percOfImmoral
 0
 100
-50.0
+20.0
 1
 1
 NIL
@@ -320,11 +334,28 @@ population
 population
 1
 100
-50.0
+100.0
 1
 1
 NIL
 HORIZONTAL
+
+BUTTON
+103
+169
+166
+202
+Go
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?

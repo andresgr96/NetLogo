@@ -1,4 +1,4 @@
-globals [seasonCounter season]
+globals [seasonCounter season worldTemperature]
 breed [normalHumans normalHuman]
 breed [immoralHumans immoralHuman]
 breed[camps camp]
@@ -10,7 +10,8 @@ normalHumans-own
   energy                                                          ;how much stamina a human has, energy will be needed to perform any action like farming
   hunger                                                          ;the need for food a human has, and affects energy and health
   planting                                                        ;the need for soil a human has, affects health
-  temperature                                                     ;the temperature of a human, affects health and the need for wood + water
+  hotness                                                         ;the temperature of a human, affects health and the need for wood + water
+  coldness                                                        ;the temperature of a human, affects health and the need for wood + water
   sickness                                                        ;the physical wellbeing of the human in terms of diseases, affects need for herbs and health
   moralLevel                                                      ;how "good or bad" a human is, affects the probabilities of choosing survival actions
   mentalHealth                                                    ;the state of the mental health of the human, affects the moral level range
@@ -28,7 +29,8 @@ immoralHumans-own
   energy                                                          ;how much stamina a human has, energy will be needed to perform any action like farming
   hunger                                                          ;the need for food a human has, and affects energy and health
   planting                                                        ;the need for soil a human has, affects health
-  temperature                                                     ;the temperature of a human, affects health and the need for wood + water
+  hotness                                                         ;the temperature of a human, affects health and the need for wood + water
+  coldness                                                        ;the temperature of a human, affects health and the need for wood + water
   sickness                                                        ;the physical wellbeing of the human in terms of diseases, affects need for herbs and health
   moralLevel                                                      ;how "good or bad" a human is, affects the probabilities of choosing survival actions
   mentalHealth                                                    ;the state of the mental health of the human, affects the moral level range
@@ -68,6 +70,7 @@ to setup
   clear-all
   reset-ticks
   setupWorld
+  setupHumans
 end
 
 to setupWorld
@@ -177,14 +180,44 @@ to setupHumans
 
   create-immoralHumans (population * (percOfImmoral / 100))
   [
+    set shape "person"
+    set color gray
     set alive? true
     set working? false
     set age getAge
+    set energy 10
+    set hunger 0
+    set planting 0
+    set coldness 0
+    set hotness 0
+    set sickness 0
+    set moralLevel random 71
+    set mentalHealth 50
+    set health 40 + mentalHealth + energy - hunger - planting - hotness - coldness
+    set backpack (list 0 0 0 0 0)
+    set jobAssigned "none"
+    findSurvivalCamp
   ]
 
   create-normalHumans (population - (population * (percOfImmoral / 100)))
   [
-
+    set shape "person"
+    set color gray
+    set alive? true
+    set working? false
+    set age getAge
+    set energy 10
+    set hunger 0
+    set planting 0
+    set coldness 0
+    set hotness 0
+    set sickness 0
+    set moralLevel random 101
+    set mentalHealth 50
+    set health 40 + mentalHealth + energy - hunger - planting - hotness - coldness
+    set backpack (list 0 0 0 0 0)
+    set jobAssigned "none"
+    findSurvivalCamp
   ]
 end
 
@@ -213,6 +246,11 @@ to-report getAge
     set ageI 60 + (random (79 - 60))
     ])
   report ageI
+end
+
+to findSurvivalCamp
+  set xcor random-xcor
+  set ycor random-ycor
 end
 @#$#@#$#@
 GRAPHICS-WINDOW

@@ -130,10 +130,7 @@ to setupWorld
     set woodProduction 70
     set soilProduction 70
     set herbsProduction 100
-    set commonWater 1000
-    set commonWood  1000
-    set commonSoil  1000
-    set commonHerbs 1000
+
   ]
 end
 @#$#@#$#@

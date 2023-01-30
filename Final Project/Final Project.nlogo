@@ -1,4 +1,4 @@
-globals [season worldTemperature storageCounter humansPlaced]
+globals [season worldTemperature plantingFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter humansPlaced weekLength]  ;the factors will be used to manipulate the need for each resource that a human has
 breed [humans human]
 breed [campStorages campStorage]
 
@@ -10,11 +10,10 @@ humans-own
   energy                                                          ;how much stamina a human has, energy will be needed to perform any action like farming
   hunger                                                          ;the need for food a human has, and affects energy and health
   planting                                                        ;the need for soil a human has, affects health
-  hotness                                                         ;the temperature of a human, affects health and the need for wood + water
-  coldness                                                        ;the temperature of a human, affects health and the need for wood + water
+  coldness                                                         ;the need for wood of a human, affects health
+  thirst                                                          ;the need for water of a human, affects health
   sickness                                                        ;the physical wellbeing of the human in terms of diseases, affects need for herbs and health
   moralLevel                                                      ;how "good or bad" a human is, affects the probabilities of choosing survival actions
-  mentalHealth                                                    ;the state of the mental health of the human, affects the moral level range
   health                                                          ;the overall health of the human, affects moral level value
   backpack                                                        ;the personal storage of a human for resources
   jobAssigned                                                     ;the type of job currently assigned to the human
@@ -65,6 +64,7 @@ to setup
   set season "spring"
   set storageCounter 0
   set humansPlaced 0
+  set weekLength (seasonduration / 3) / 4
   setupWorld
   setupHumans
   setupStorages
@@ -186,8 +186,8 @@ to setupHumans
     set energy 10
     set hunger 0
     set planting 0
+    set thirst 0
     set coldness 0
-    set hotness 0
     set sickness 0
     ifelse morality = "immoral"
     [
@@ -198,9 +198,7 @@ to setupHumans
       set moralLevel random 101
       set color green
     ]
-    set moralLevel random 71
-    set mentalHealth 50
-    set health 40 + mentalHealth + energy - hunger - planting - hotness - coldness
+    set health 90 + energy - hunger - planting - coldness - thirst - sickness
     set backpack (list 0 0 0 0 0)
     set jobAssigned "none"
     findSurvivalCamp
@@ -233,8 +231,8 @@ to setupStorages
 end
 
 to go
-  explore
   seasonChange
+  basicHumanAttributeManagement
   tick
 end
 
@@ -368,7 +366,31 @@ to findSurvivalCamp   ;code mostly taken from assignment 2
       ]
     ]
   )
+end
 
+to basicHumanAttributeManagement
+  if ticks mod weekLength = 0
+  [
+    ask humans
+    [
+      set energy (energy - 1)
+      set hunger (10 - energy)
+      set planting planting + (random-float 0.6 * plantingFactor)
+      set thirst thirst + (random-float 0.6 * thirstFactor)
+      set coldness coldness + (random-float 0.6 * coldnessFactor)
+      set sickness sickness + (random-float 0.3 * sicknessFactor)
+      set health 90 + energy - hunger - planting - coldness - thirst
+
+      if health < 70                                                   ;if the humans health is lower than 60, the moral level starts lowering
+      [
+        set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
+      ]
+      if health < 20                                                   ;if their health level reaches a value lower than 20 they die
+      [
+        die
+      ]
+    ]
+  ]
 end
 
 to explore
@@ -388,22 +410,34 @@ to seasonChange
  (ifelse season = "spring"
      [
        set season "summer"
-       set worldTemperature "hot"
+       set thirstFactor 2
+       set sicknessFactor 1
+       set coldnessFactor 1
+       set plantingFactor 1
      ]
      season = "summer"
      [
        set season "fall"
-       set worldTemperature "chill"
+       set thirstFactor 1
+       set sicknessFactor 2
+       set coldnessFactor 1
+       set plantingFactor 1
      ]
       season = "fall"
      [
        set season "winter"
-       set worldTemperature "cold"
+       set thirstFactor 1
+       set sicknessFactor 1
+       set coldnessFactor 2
+       set plantingFactor 1
      ]
       season = "winter"
      [
        set season "spring"
-       set worldTemperature "warm"
+       set thirstFactor 1
+       set sicknessFactor 1
+       set coldnessFactor 1
+       set plantingFactor 2
      ]
     )
   ]
@@ -512,8 +546,8 @@ SLIDER
 seasonDuration
 seasonDuration
 10
-1000
-100.0
+1200
+1200.0
 10
 1
 NIL

@@ -557,7 +557,7 @@ lightDuration
 lightDuration
 0
 500
-75.0
+500.0
 1
 1
 NIL

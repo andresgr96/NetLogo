@@ -427,7 +427,7 @@ to moveCars
      set carWaitingTime carWaitingTime + 1
     ]
   ]
-  tick
+
 end
 
 to-report avgCarWaitingTime
@@ -557,7 +557,7 @@ lightDuration
 lightDuration
 0
 500
-75.0
+500.0
 1
 1
 NIL

@@ -1,7 +1,7 @@
-globals [seasonCounter season worldTemperature]
+globals [season worldTemperature]
 breed [normalHumans normalHuman]
 breed [immoralHumans immoralHuman]
-breed[camps camp]
+breed [campStorages campStorage]
 
 
 normalHumans-own
@@ -42,6 +42,8 @@ immoralHumans-own
   survivalCamp                                                    ;the survival camp the human is part of
 ]
 
+
+
                                                                   ;adding variables to patches in order for them to be able to act as survival camps too
 patches-own
 [
@@ -71,6 +73,7 @@ to setup
   reset-ticks
   setupWorld
   setupHumans
+  set season "spring"
 end
 
 to setupWorld
@@ -222,7 +225,10 @@ to setupHumans
 end
 
 to go
-
+  explore
+  seasonChange
+  tick
+end
 
 to-report getAge
   let n random 101
@@ -265,6 +271,38 @@ to explore
     set ycor newycor
   ]
 end
+
+to seasonChange
+ let seasonflow (list "spring" "summer" "fall" "winter")
+ if ticks mod seasonDuration = 0
+ [
+ (ifelse season = "spring"
+     [
+       set season "summer"
+       set worldTemperature "hot"
+     ]
+     season = "summer"
+     [
+       set season "fall"
+       set worldTemperature "chill"
+     ]
+      season = "fall"
+     [
+       set season "winter"
+       set worldTemperature "cold"
+     ]
+      season = "winter"
+     [
+       set season "spring"
+       set worldTemperature "warm"
+     ]
+    )
+  ]
+end
+
+to-report seasonReporter
+  report season
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 207
@@ -294,10 +332,10 @@ ticks
 30.0
 
 BUTTON
-31
-169
-95
-202
+41
+147
+105
+180
 Setup
 setup
 NIL
@@ -319,7 +357,7 @@ percOfImmoral
 percOfImmoral
 0
 100
-20.0
+46.0
 1
 1
 NIL
@@ -334,17 +372,17 @@ population
 population
 1
 100
-100.0
+71.0
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-103
-169
-166
-202
+113
+147
+176
+180
 Go
 go
 T
@@ -356,6 +394,32 @@ NIL
 NIL
 NIL
 1
+
+SLIDER
+20
+110
+192
+143
+seasonDuration
+seasonDuration
+1
+1000
+571.0
+10
+1
+NIL
+HORIZONTAL
+
+MONITOR
+733
+17
+790
+62
+Season
+seasonReporter
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?

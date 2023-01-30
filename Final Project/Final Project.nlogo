@@ -1,11 +1,11 @@
 globals [season worldTemperature storageCounter humansPlaced]
-breed [normalHumans normalHuman]
-breed [immoralHumans immoralHuman]
+breed [humans human]
 breed [campStorages campStorage]
 
 
-normalHumans-own
+humans-own
 [
+  morality                                                        ;if the human is naturally immoral or not
   age                                                             ;how old the human is and will affect energy and health
   energy                                                          ;how much stamina a human has, energy will be needed to perform any action like farming
   hunger                                                          ;the need for food a human has, and affects energy and health
@@ -22,26 +22,6 @@ normalHumans-own
   alive?                                                          ;if the human is alive or ded
   survivalCamp                                                    ;the survival camp the human is part of
 ]
-
-immoralHumans-own
-[
-  age                                                             ;how old the human is and will affect energy and health
-  energy                                                          ;how much stamina a human has, energy will be needed to perform any action like farming
-  hunger                                                          ;the need for food a human has, and affects energy and health
-  planting                                                        ;the need for soil a human has, affects health
-  hotness                                                         ;the temperature of a human, affects health and the need for wood + water
-  coldness                                                        ;the temperature of a human, affects health and the need for wood + water
-  sickness                                                        ;the physical wellbeing of the human in terms of diseases, affects need for herbs and health
-  moralLevel                                                      ;how "good or bad" a human is, affects the probabilities of choosing survival actions
-  mentalHealth                                                    ;the state of the mental health of the human, affects the moral level range
-  health                                                          ;the overall health of the human, affects moral level value
-  backpack                                                        ;the personal storage of a human for resources
-  jobAssigned                                                     ;the type of job currently assigned to the human
-  working?                                                        ;if the human is currently on a job
-  alive?                                                          ;if the human is alive or ded
-  survivalCamp                                                    ;the survival camp the human is part of
-]
-
 
                                                                   ;adding variables to patches in order for them to be able to act as survival camps too
 patches-own
@@ -180,11 +160,26 @@ end
 
 to setupHumans
   let randomN random 101
+  let maxImmorals (population * (percOfImmoral / 100))
 
-  create-immoralHumans (population * (percOfImmoral / 100))
+  create-humans population
   [
+    let immorals count turtles with [breed = humans] with [morality = "immoral"]
+    ifelse immorals < maxImmorals
+    [
+      let randomI random 2
+      ifelse randomI = 0
+      [
+        set morality "immoral"
+      ]
+      [
+        set morality "moral"
+      ]
+    ]
+    [
+      set morality "moral"
+    ]
     set shape "person"
-    set color red
     set alive? true
     set working? false
     set age getAge
@@ -194,6 +189,15 @@ to setupHumans
     set coldness 0
     set hotness 0
     set sickness 0
+    ifelse morality = "immoral"
+    [
+      set moralLevel random 71
+      set color red
+    ]
+    [
+      set moralLevel random 101
+      set color green
+    ]
     set moralLevel random 71
     set mentalHealth 50
     set health 40 + mentalHealth + energy - hunger - planting - hotness - coldness
@@ -202,26 +206,6 @@ to setupHumans
     findSurvivalCamp
   ]
 
-  create-normalHumans (population - (population * (percOfImmoral / 100)))
-  [
-    set shape "person"
-    set color green
-    set alive? true
-    set working? false
-    set age getAge
-    set energy 10
-    set hunger 0
-    set planting 0
-    set coldness 0
-    set hotness 0
-    set sickness 0
-    set moralLevel random 101
-    set mentalHealth 50
-    set health 40 + mentalHealth + energy - hunger - planting - hotness - coldness
-    set backpack (list 0 0 0 0 0)
-    set jobAssigned "none"
-    findSurvivalCamp
-  ]
 end
 
 to setupStorages
@@ -251,7 +235,7 @@ end
 to go
   explore
   seasonChange
-  tick  tick
+  tick
 end
 
 to-report getAge
@@ -388,7 +372,7 @@ to findSurvivalCamp   ;code mostly taken from assignment 2
 end
 
 to explore
-  ask turtles with [breed = normalHumans or breed = immoralHumans]
+  ask turtles with [breed = humans]
   [
     let newxcor xcor + (-1 + (random (1 - (-1))))
     let newycor ycor + (-1 + (random (1 - (-1))))
@@ -552,7 +536,7 @@ MONITOR
 933
 63
 Population Camp 1
-count turtles with [breed = normalHumans or breed = immoralHumans] with [survivalCamp = 1]
+count turtles with [breed = humans] with [survivalCamp = 1]
 17
 1
 11
@@ -563,7 +547,7 @@ MONITOR
 932
 114
 Population Camp 2
-count turtles with [breed = normalHumans or breed = immoralHumans] with [survivalCamp = 2]
+count turtles with [breed = humans] with [survivalCamp = 2]
 17
 1
 11
@@ -574,7 +558,7 @@ MONITOR
 932
 166
 Population Camp 3
-count turtles with [breed = normalHumans or breed = immoralHumans] with [survivalCamp = 3]
+count turtles with [breed = humans] with [survivalCamp = 3]
 17
 1
 11
@@ -585,7 +569,7 @@ MONITOR
 932
 216
 Population Camp 4
-count turtles with [breed = normalHumans or breed = immoralHumans] with [survivalCamp = 4]
+count turtles with [breed = humans] with [survivalCamp = 4]
 17
 1
 11

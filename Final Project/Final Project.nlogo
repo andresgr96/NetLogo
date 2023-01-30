@@ -46,6 +46,7 @@ immoralHumans-own
                                                                   ;adding variables to patches in order for them to be able to act as survival camps too
 patches-own
 [
+  subPatches                                                      ;divides each patch into subpatches for precise human placement
   camp?                                                           ;is the patch a survival camp
   campId                                                          ;identifies each camp
   storageId                                                       ;which storage belongs to the camp
@@ -93,6 +94,7 @@ to setupWorld
   [
     set pcolor 52
     set camp? false
+    set subPatches [nobody nobody nobody nobody]
   ]
 
 
@@ -278,9 +280,34 @@ to-report getAge
   report ageI
 end
 
-to findSurvivalCamp
-  set xcor random-xcor
-  set ycor random-ycor
+;to findSurvivalCamp
+;  set xcor random-xcor
+;  set ycor random-ycor
+;end
+
+to findSurvivalCamp   ;code mostly taken from assignment 2
+
+  let maxCapacity (population / 4) + 1
+  let success false
+  while [success = false]
+  [
+    let place one-of patches with [camp? = true and count turtles-here < 4]
+    let subPlace random 4
+    if [item subPlace subPatches] of place = nobody
+    [
+      ask place                    ;adds agent to one of the subpatches of a patch
+      [                            ;note that myself here refers to the agent that askes the patch to do something
+        set subPatches replace-item subPlace subPatches myself
+      ]
+      set survivalCamp [campId] of place
+      set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
+      ifelse subPlace < 2
+      [ set ycor [pycor] of place + 0.25]
+      [ set ycor [pycor] of place - 0.25]
+      set success true
+    ]
+  ]
+
 end
 
 to explore
@@ -378,7 +405,7 @@ percOfImmoral
 percOfImmoral
 0
 100
-46.0
+50.0
 1
 1
 NIL
@@ -393,7 +420,7 @@ population
 population
 1
 100
-71.0
+100.0
 1
 1
 NIL
@@ -438,6 +465,50 @@ MONITOR
 62
 Season
 seasonReporter
+17
+1
+11
+
+MONITOR
+805
+18
+933
+63
+Population Camp 1
+count turtles with [breed = normalHumans or breed = immoralHumans] with [survivalCamp = 1]
+17
+1
+11
+
+MONITOR
+806
+69
+932
+114
+Population Camp 2
+count turtles with [breed = normalHumans or breed = immoralHumans] with [survivalCamp = 2]
+17
+1
+11
+
+MONITOR
+806
+121
+932
+166
+Population Camp 3
+count turtles with [breed = normalHumans or breed = immoralHumans] with [survivalCamp = 3]
+17
+1
+11
+
+MONITOR
+805
+171
+932
+216
+Population Camp 4
+count turtles with [breed = normalHumans or breed = immoralHumans] with [survivalCamp = 4]
 17
 1
 11

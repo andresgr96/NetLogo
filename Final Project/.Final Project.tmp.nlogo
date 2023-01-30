@@ -1,4 +1,4 @@
-globals [season worldTemperature storageCounter]
+globals [season worldTemperature storageCounter humansPlaced]
 breed [normalHumans normalHuman]
 breed [immoralHumans immoralHuman]
 breed [campStorages campStorage]
@@ -84,6 +84,7 @@ to setup
   reset-ticks
   set season "spring"
   set storageCounter 0
+  set humansPlaced 0
   setupWorld
   setupHumans
   setupStorages
@@ -286,27 +287,79 @@ end
 ;end
 
 to findSurvivalCamp   ;code mostly taken from assignment 2
-
-  let maxCapacity (population / 4) + 1
-  let success false
-  while [success = false]
-  [
-    let place one-of patches with [camp? = true and count turtles-here < maxCapacit]
-    let subPlace random 4
-    if [item subPlace subPatches] of place = nobody
+  let maxCapacity (population / 4)                                      ;we keep the population of each camp equal to avoid unnecesary randomness in the experiment
+  (ifelse humansPlaced < maxCapacity                                    ;populate camp 1
     [
-      ask place                    ;adds agent to one of the subpatches of a patch
-      [                            ;note that myself here refers to the agent that askes the patch to do something
-        set subPatches replace-item subPlace subPatches myself
+      let success false
+      while [success = false]
+      [
+        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 1]
+        let subPlace random 4
+        if [item subPlace subPatches] of place = nobody
+        [
+          ask place                    ;adds agent to one of the subpatches of a patch
+          [                            ;note that myself here refers to the agent that askes the patch to do something
+            set subPatches replace-item subPlace subPatches myself
+          ]
+          set survivalCamp [campId] of place
+          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
+          ifelse subPlace < 2
+          [ set ycor [pycor] of place + 0.25]
+          [ set ycor [pycor] of place - 0.25]
+          set success true
+          set humansPlaced humansPlaced + 1
+        ]
       ]
-      set survivalCamp [campId] of place
-      set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
-      ifelse subPlace < 2
-      [ set ycor [pycor] of place + 0.25]
-      [ set ycor [pycor] of place - 0.25]
-      set success true
     ]
-  ]
+
+    humansPlaced >= maxCapacity and humansPlaced < (maxCapacity * 2)   ;populate camp 2
+    [
+      let success false
+      while [success = false]
+      [
+        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 2]
+        let subPlace random 4
+        if [item subPlace subPatches] of place = nobody
+        [
+          ask place                    ;adds agent to one of the subpatches of a patch
+          [                            ;note that myself here refers to the agent that askes the patch to do something
+            set subPatches replace-item subPlace subPatches myself
+          ]
+          set survivalCamp [campId] of place
+          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
+          ifelse subPlace < 2
+          [ set ycor [pycor] of place + 0.25]
+          [ set ycor [pycor] of place - 0.25]
+          set success true
+          set humansPlaced humansPlaced + 1
+        ]
+      ]
+    ]
+
+    humansPlaced >=  and humansPlaced < (maxCapacity * 2)   ;populate camp 2
+    [
+      let success false
+      while [success = false]
+      [
+        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 2]
+        let subPlace random 4
+        if [item subPlace subPatches] of place = nobody
+        [
+          ask place                    ;adds agent to one of the subpatches of a patch
+          [                            ;note that myself here refers to the agent that askes the patch to do something
+            set subPatches replace-item subPlace subPatches myself
+          ]
+          set survivalCamp [campId] of place
+          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
+          ifelse subPlace < 2
+          [ set ycor [pycor] of place + 0.25]
+          [ set ycor [pycor] of place - 0.25]
+          set success true
+          set humansPlaced humansPlaced + 1
+        ]
+      ]
+    ]
+  )
 
 end
 

@@ -1,4 +1,4 @@
-globals [season worldTemperature]
+globals [season worldTemperature storageCounter]
 breed [normalHumans normalHuman]
 breed [immoralHumans immoralHuman]
 breed [campStorages campStorage]
@@ -43,18 +43,13 @@ immoralHumans-own
 ]
 
 
-
                                                                   ;adding variables to patches in order for them to be able to act as survival camps too
 patches-own
 [
   camp?                                                           ;is the patch a survival camp
   campId                                                          ;identifies each camp
+  storageId                                                       ;which storage belongs to the camp
   numberOfHabitants                                               ;the current number of habitants of the camp
-  commonWater                                                     ;current amount of water in the camps common storage
-  commonWood                                                      ;current amount of wood in the camps common storage
-  commonFood                                                      ;current amount of food in the camps common storage
-  commonHerbs                                                     ;current amount of herbs in the camps common storage
-  commonSoil                                                      ;current amount of soil in the camps common storage
   waterJobs                                                       ;current amount of available jobs that produce water
   woodJobs                                                        ;current amount of available jobs that produce wood
   foodJobs                                                        ;current amount of available jobs that produce food
@@ -67,13 +62,30 @@ patches-own
   soilProduction                                                  ;production rate of soil for any soil job
 ]
 
+campStorages-own
+[
+  id                                                              ;the id of the storage to keep track which storage belongs to which camp
+  commonWater                                                     ;current amount of water in the camps common storage
+  commonWood                                                      ;current amount of wood in the camps common storage
+  commonFood                                                      ;current amount of food in the camps common storage
+  commonHerbs                                                     ;current amount of herbs in the camps common storage
+  commonSoil                                                      ;current amount of soil in the camps common storage
+  waterRation                                                     ;max amount humans can get per day of water without stealing, dependant on common water
+  woodRation                                                      ;max amount humans can get per day of wood without stealing, dependant on common wood
+  foodRation                                                      ;max amount humans can get per day of food without stealing, dependant on common food
+  herbsRation                                                     ;max amount humans can get per day of herbs without stealing, dependant on common herbs
+  soilRation                                                      ;max amount humans can get per day of soil without stealing, dependant on common soil
+]
+
 
 to setup
   clear-all
   reset-ticks
+  set season "spring"
+  set storageCounter 0
   setupWorld
   setupHumans
-  set season "spring"
+  setupStorages
 end
 
 to setupWorld
@@ -83,46 +95,19 @@ to setupWorld
     set camp? false
   ]
 
-  ask patches with [pxcor < -10 and pxcor > -40 and pycor < -10 and pycor > -40]    ;set up survival camp 1
+
+    ask patches with [pxcor < -10 and pxcor > -40 and pycor < 40 and pycor > 10]     ;set up survival camp 1
   [
-    set pcolor 64
+    set pcolor 69
     set camp? true
     set campId 1
-    set numberOfHabitants 0
-    set waterProduction 100
-    set woodProduction 70
-    set soilProduction 70
-    set herbsProduction 70
-    set foodProduction 70
-    set commonWater 1000
-    set commonWood  1000
-    set commonFood  1000
-    set commonHerbs 1000
-    set commonSoil  1000
-    set waterJobs 5
-    set woodJobs 5
-    set foodJobs 5
-    set herbsJobs 5
-    set soilJobs 5
-  ]
-
-
-  ask patches with [pxcor < -10 and pxcor > -40 and pycor < 40 and pycor > 10]     ;set up survival camp 2
-  [
-    set pcolor 64
-    set camp? true
-    set campId 2
+    set storageId 1
     set numberOfHabitants 0
     set waterProduction 70
     set woodProduction 100
     set soilProduction 70
     set herbsProduction 70
     set foodProduction 70
-    set commonWater 1000
-    set commonWood  1000
-    set commonSoil  1000
-    set commonHerbs 1000
-    set commonSoil  1000
     set waterJobs 5
     set woodJobs 5
     set foodJobs 5
@@ -130,22 +115,18 @@ to setupWorld
     set soilJobs 5
   ]
 
-  ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 10]     ;set up survival camp 3
+    ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 10]     ;set up survival camp 2
   [
-    set pcolor 64
+    set pcolor 69
     set camp? true
-    set campId 3
+    set campId 2
+    set storageId 2
     set numberOfHabitants 0
     set waterProduction 70
     set woodProduction 70
     set soilProduction 100
     set herbsProduction 70
     set foodProduction 70
-    set commonWater 1000
-    set commonWood  1000
-    set commonFood  1000
-    set commonHerbs 1000
-    set commonSoil  1000
     set waterJobs 5
     set woodJobs 5
     set foodJobs 5
@@ -153,22 +134,38 @@ to setupWorld
     set soilJobs 5
   ]
 
+  ask patches with [pxcor < -10 and pxcor > -40 and pycor < -10 and pycor > -40]    ;set up survival camp 3
+  [
+    set pcolor 69
+    set camp? true
+    set campId 3
+    set storageId 3
+    set numberOfHabitants 0
+    set waterProduction 100
+    set woodProduction 70
+    set soilProduction 70
+    set herbsProduction 70
+    set foodProduction 70
+    set waterJobs 5
+    set woodJobs 5
+    set foodJobs 5
+    set herbsJobs 5
+    set soilJobs 5
+  ]
+
+
   ask patches with [pxcor < 40 and pxcor > 10 and pycor < -10 and pycor > -40]    ;set up survival camp 4
   [
-    set pcolor 64
+    set pcolor 69
     set camp? true
     set campId 4
+    set storageId 4
     set numberOfHabitants 0
     set waterProduction 70
     set woodProduction 70
     set soilProduction 70
     set herbsProduction 100
     set foodProduction 70
-    set commonWater 1000
-    set commonWood  1000
-    set commonSoil  1000
-    set commonHerbs 1000
-    set commonSoil  1000
     set waterJobs 5
     set woodJobs 5
     set foodJobs 5
@@ -224,10 +221,34 @@ to setupHumans
   ]
 end
 
+to setupStorages
+
+  create-campStorages 4
+  [
+  let idList (list 1 2 3 4)
+  let xcorList (list -25 25 -25 25 )
+  let ycorList (list 25 25 -25 -25 )
+
+  set shape "square"
+  set color gray
+  set size 5
+  set id item storageCounter idList
+  set xcor item storageCounter xcorList
+  set ycor item storageCounter ycorList
+  set commonWater 1000
+  set commonWood 1000
+  set commonFood 1000
+  set commonHerbs 1000
+  set commonSoil 1000
+  set storageCounter storageCounter + 1
+  ]
+
+end
+
 to go
   explore
   seasonChange
-  tick
+  tick  tick
 end
 
 to-report getAge

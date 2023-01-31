@@ -1,15 +1,16 @@
-globals [season worldTemperature hungerFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter humansPlaced weekLength]  ;the factors will be used to manipulate the need for each resource that a human has
+globals [season worldTemperature hungerFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter idCounter humansPlaced weekLength workEnergy]  ;the factors will be used to manipulate the need for each resource that a human has
 breed [humans human]
 breed [campCouncils campCouncil]
 
 
 humans-own
 [
+  id                                                              ;the id of the human agent
   morality                                                        ;if the human is naturally immoral or not
   age                                                             ;how old the human is and will affect energy and health
   energy                                                          ;how much stamina a human has, energy will be needed to perform any action like farming
   hunger                                                          ;the need for food a human has, and affects energy and health
-  coldness                                                         ;the need for wood of a human, affects health
+  coldness                                                        ;the need for wood of a human, affects health
   thirst                                                          ;the need for water of a human, affects health
   sickness                                                        ;the physical wellbeing of the human in terms of diseases, affects need for herbs and health
   moralLevel                                                      ;how "good or bad" a human is, affects the probabilities of choosing survival actions
@@ -51,6 +52,10 @@ campCouncils-own                                                  ;councils repr
   woodProduction                                                  ;production rate of wood for any wood job
   foodProduction                                                  ;production rate of food for any water job
   herbsProduction                                                 ;production rate of herbs for any herbs job
+  waterRationList                                                 ;list of ids of agents that have received their weekly water ration
+  woodRationList                                                  ;list of ids of agents that have received their weekly wood ration
+  foodRationList                                                  ;list of ids of agents that have received their weekly food ration
+  herbsRationList                                                 ;list of ids of agents that have received their weekly herbs ration
 ]
 
 
@@ -60,7 +65,9 @@ to setup
   reset-ticks
   set season "spring"
   set storageCounter 0
+  set idCounter 1
   set humansPlaced 0
+  set workEnergy 0.5
   set weekLength (seasonduration / 3) / 4
   setupWorld
   setupHumans
@@ -161,6 +168,7 @@ to setupHumans
     set shape "person"
     set alive? true
     set working? false
+    set id idCounter
     set age getAge
     set energy 10
     set hunger 0
@@ -180,6 +188,7 @@ to setupHumans
     set backpack (list 0 0 0 0 0)
     set jobAssigned "none"
     findSurvivalCamp
+    set idCounter idCounter + 1
   ]
 
 end
@@ -210,10 +219,14 @@ to setupCouncils
   set commonWood 1000
   set commonFood 1000
   set commonHerbs 1000
-  set waterJobs 5
+  set waterJobs 25
   set woodJobs 5
   set foodJobs 5
   set herbsJobs 5
+  set waterRationList (list )
+  set woodRationList (list )
+  set herbsRationList (list )
+  set foodRationList (list )
   set storageCounter storageCounter + 1
   ]
 end
@@ -325,30 +338,7 @@ to go
   tick
 end
 
-;-------------------------------------------------------------------------Agent Management Systems----------------------------------------------------------------------------
-to basicHumanAttributeManagement
-  if ticks mod weekLength = 0
-  [
-    ask humans
-    [
-      set energy (energy - 1)
-      set hunger hunger - (10 - energy) + (random-float 1.2 * hungerFactor)
-      set thirst thirst + (random-float 1.2 * thirstFactor)
-      set coldness coldness + (random-float 1.2 * coldnessFactor)
-      set sickness sickness + (random-float 1.2 * sicknessFactor)
-      set health 90 + energy - hunger - coldness - thirst - sickness
-
-      if health < 70                                                   ;if the humans health is lower than 70, the moral level starts lowering
-      [
-        set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
-      ]
-      if health < 30
-      [
-        die
-      ]
-    ]
-  ]
-end
+;----------------------------------------------------------------------------------------------Management Systems----------------------------------------------------------------------------
 
 to seasonManagement
  let seasonflow (list "spring" "summer" "fall" "winter")
@@ -390,7 +380,57 @@ to seasonManagement
   ]
 end
 
-;-------------------------------------------------------------------------------Human Actions--------------------------------------------------------------------------------
+to councilManagement
+  if ticks mod weekLength = 0
+  [
+    ask CampCouncils
+    [
+      set energy (energy - 1)
+      set hunger hunger - (10 - energy) + (random-float 1.2 * hungerFactor)
+      set thirst thirst + (random-float 1.2 * thirstFactor)
+      set coldness coldness + (random-float 1.2 * coldnessFactor)
+      set sickness sickness + (random-float 1.2 * sicknessFactor)
+      set health 90 + energy - hunger - coldness - thirst - sickness
+
+      if health < 70                                                   ;if the humans health is lower than 70, the moral level starts lowering
+      [
+        set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
+      ]
+      if health < 30
+      [
+        die
+      ]
+    ]
+  ]
+end
+
+
+
+to basicHumanAttributeManagement
+  if ticks mod weekLength = 0
+  [
+    ask humans
+    [
+      set energy (energy - 1)
+      set hunger hunger - (10 - energy) + (random-float 1.2 * hungerFactor)
+      set thirst thirst + (random-float 1.2 * thirstFactor)
+      set coldness coldness + (random-float 1.2 * coldnessFactor)
+      set sickness sickness + (random-float 1.2 * sicknessFactor)
+      set health 90 + energy - hunger - coldness - thirst - sickness
+
+      if health < 70                                                   ;if the humans health is lower than 70, the moral level starts lowering
+      [
+        set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
+      ]
+      if health < 30
+      [
+        die
+      ]
+    ]
+  ]
+end
+
+;---------------------------------------------------------------------------------------------Human Actions--------------------------------------------------------------------------------
 
 to workForResource[resource]                                                                                     ;implements the ability of humans to work for resources
   let council campCouncils with [id = [survivalCamp] of myself]
@@ -459,21 +499,25 @@ to getResourceRation[resource]                                                  
         [
           set ration waterRation
           set commonWater commonWater - ration
+          set waterRationList lput [id] of myself waterRationList
         ]
       resource = 1
         [
           set ration woodRation
           set commonWood commonWood - ration
+          set woodRationList lput [id] of myself woodRationList
         ]
         resource = 2
         [
           set ration foodRation
           set commonFood commonFood - ration
+          set foodRationList lput [id] of myself foodRationList
         ]
         resource = 3
         [
           set ration herbsRation
           set commonHerbs commonHerbs - ration
+          set herbsRationList lput [id] of myself herbsRationList
         ])
 
     ]
@@ -553,7 +597,7 @@ to idleWalk
 end
 
 
-;---------------------------------------------------------------------Reporters and Helper Functions--------------------------------------------------------------------------------
+;--------------------------------------------------------------------------------------Reporters and Helper Functions--------------------------------------------------------------------------------
 
 
 to getPunished[crime]                                                                        ;agens can get punsihed for their crimes if they get caught, punishment depends on the crime

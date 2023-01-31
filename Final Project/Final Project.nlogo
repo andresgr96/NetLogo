@@ -364,6 +364,24 @@ to basicHumanAttributeManagement
   ]
 end
 
+
+to-report caughtChance                                               ;we implement also a negative influence on immoral decisions depending on the humans around the agent
+  let witnesses other humans in-radius 5
+  let prob 0
+  foreach witnesses
+  [
+    ifelse prob < 25
+    [
+      set prob prob + 5
+    ]
+    [
+      set prob prob
+    ]
+  ]
+
+  report prob
+end
+
 to explore
   ask turtles with [breed = humans]
   [
@@ -446,10 +464,10 @@ ticks
 30.0
 
 BUTTON
-41
-147
-105
-180
+39
+151
+103
+184
 Setup
 setup
 NIL
@@ -493,10 +511,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-113
-147
-176
-180
+111
+151
+174
+184
 Go
 go
 T

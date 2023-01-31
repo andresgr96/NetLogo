@@ -1,6 +1,6 @@
 globals [season worldTemperature plantingFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter humansPlaced weekLength]  ;the factors will be used to manipulate the need for each resource that a human has
 breed [humans human]
-breed [campStorages campStorage]
+breed [campCouncils campCouncil]
 
 
 humans-own
@@ -29,20 +29,9 @@ patches-own
   camp?                                                           ;is the patch a survival camp
   campId                                                          ;identifies each camp
   storageId                                                       ;which storage belongs to the camp
-  numberOfHabitants                                               ;the current number of habitants of the camp
-  waterJobs                                                       ;current amount of available jobs that produce water
-  woodJobs                                                        ;current amount of available jobs that produce wood
-  foodJobs                                                        ;current amount of available jobs that produce food
-  herbsJobs                                                       ;current amount of available jobs that produce herbs
-  soilJobs                                                        ;current amount of available jobs that produce soil
-  waterProduction                                                 ;production rate of water for any water job
-  woodProduction                                                  ;production rate of wood for any wood job
-  foodProduction                                                  ;production rate of food for any water job
-  herbsProduction                                                 ;production rate of herbs for any herbs job
-  soilProduction                                                  ;production rate of soil for any soil job
 ]
 
-campStorages-own
+campCouncils-own                                                  ;councils represent a mini-government that manages the camps respurces, jobs and rations of resources for humans that inhabit them
 [
   id                                                              ;the id of the storage to keep track which storage belongs to which camp
   commonWater                                                     ;current amount of water in the camps common storage
@@ -55,6 +44,17 @@ campStorages-own
   foodRation                                                      ;max amount humans can get per day of food without stealing, dependant on common food
   herbsRation                                                     ;max amount humans can get per day of herbs without stealing, dependant on common herbs
   soilRation                                                      ;max amount humans can get per day of soil without stealing, dependant on common soil
+  numberOfHabitants                                               ;the current number of habitants of the camp
+  waterJobs                                                       ;current amount of available jobs that produce water
+  woodJobs                                                        ;current amount of available jobs that produce wood
+  foodJobs                                                        ;current amount of available jobs that produce food
+  herbsJobs                                                       ;current amount of available jobs that produce herbs
+  soilJobs                                                        ;current amount of available jobs that produce soil
+  waterProduction                                                 ;production rate of water for any water job
+  woodProduction                                                  ;production rate of wood for any wood job
+  foodProduction                                                  ;production rate of food for any water job
+  herbsProduction                                                 ;production rate of herbs for any herbs job
+  soilProduction                                                  ;production rate of soil for any soil job
 ]
 
 
@@ -85,17 +85,6 @@ to setupWorld
     set camp? true
     set campId 1
     set storageId 1
-    set numberOfHabitants 0
-    set waterProduction 70
-    set woodProduction 100
-    set soilProduction 70
-    set herbsProduction 70
-    set foodProduction 70
-    set waterJobs 5
-    set woodJobs 5
-    set foodJobs 5
-    set herbsJobs 5
-    set soilJobs 5
   ]
 
     ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 10]     ;set up survival camp 2
@@ -104,17 +93,6 @@ to setupWorld
     set camp? true
     set campId 2
     set storageId 2
-    set numberOfHabitants 0
-    set waterProduction 70
-    set woodProduction 70
-    set soilProduction 100
-    set herbsProduction 70
-    set foodProduction 70
-    set waterJobs 5
-    set woodJobs 5
-    set foodJobs 5
-    set herbsJobs 5
-    set soilJobs 5
   ]
 
   ask patches with [pxcor < -10 and pxcor > -40 and pycor < -10 and pycor > -40]    ;set up survival camp 3
@@ -123,17 +101,6 @@ to setupWorld
     set camp? true
     set campId 3
     set storageId 3
-    set numberOfHabitants 0
-    set waterProduction 100
-    set woodProduction 70
-    set soilProduction 70
-    set herbsProduction 70
-    set foodProduction 70
-    set waterJobs 5
-    set woodJobs 5
-    set foodJobs 5
-    set herbsJobs 5
-    set soilJobs 5
   ]
 
 
@@ -143,17 +110,6 @@ to setupWorld
     set camp? true
     set campId 4
     set storageId 4
-    set numberOfHabitants 0
-    set waterProduction 70
-    set woodProduction 70
-    set soilProduction 70
-    set herbsProduction 100
-    set foodProduction 70
-    set waterJobs 5
-    set woodJobs 5
-    set foodJobs 5
-    set herbsJobs 5
-    set soilJobs 5
   ]
 end
 
@@ -208,26 +164,41 @@ end
 
 to setupStorages
 
-  create-campStorages 4
+  create-campCouncils 4
   [
   let idList (list 1 2 3 4)
   let xcorList (list -25 25 -25 25 )
-  let ycorList (list 25 25 -25 -25 )
+  let ycorList (list 25 25 -25 -25)
+  let waterList (list 70 70 100 70)
+  let woodList (list 100 70 70 70)
+  let herbsList (list 70 70 70 100)
+  let soilList (list 70 100 70 70)
+  let foodList (list 70 70 70 70)
 
   set shape "square"
   set color gray
   set size 5
+  set waterProduction item storageCounter waterList
+  set woodProduction item storageCounter woodList
+  set herbsProduction item storageCounter herbsList
+  set soilProduction item storageCounter soilList
+  set foodProduction item storageCounter foodList
   set id item storageCounter idList
   set xcor item storageCounter xcorList
   set ycor item storageCounter ycorList
+  set numberOfHabitants population / 4
   set commonWater 1000
   set commonWood 1000
   set commonFood 1000
   set commonHerbs 1000
   set commonSoil 1000
+  set waterJobs 5
+  set woodJobs 5
+  set foodJobs 5
+  set herbsJobs 5
+  set soilJobs 5
   set storageCounter storageCounter + 1
   ]
-
 end
 
 to go
@@ -385,7 +356,7 @@ to basicHumanAttributeManagement
       [
         set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
       ]
-      if health < 20                                                   ;if their health level reaches a value lower than 20 they die
+      if health < 20
       [
         die
       ]

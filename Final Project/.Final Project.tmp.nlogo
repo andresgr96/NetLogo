@@ -435,7 +435,7 @@ to workForResource[resource]                                                    
         ])
     ]
     let res item resource backpack
-    set backpack replace-item resource backpack (res + ratio)
+    set backpack replace-item resource backpack (res + toReceive)
   ]
 end
 
@@ -554,6 +554,45 @@ end
 
 
 ;---------------------------------------------------------------------Reporters and Helper Functions--------------------------------------------------------------------------------
+
+
+to getPunished[crime]                                                                        ;agens can get punsihed for their crimes if they get caught, punishment depends on the crime
+  let council campCouncils with [id = [survivalCamp] of myself]
+  let myWater item 0 backpack
+  let myWood item 1 backpack
+  let myFood item 2 backpack
+  let myHerbs item 3 backpack
+
+  (ifelse crime = "stealing"
+  [
+      ask council
+      [
+        set commonWater commonWater + myWater
+        set commonWood commonWood + myWood
+        set commonFood commonFood + myFood
+        set commonHerbs commonHerbs + myHerbs
+      ]
+      set backpack replace-item 0 backpack 0
+      set backpack replace-item 1 backpack 0
+      set backpack replace-item 2 backpack 0
+      set backpack replace-item 3 backpack 0
+  ]
+  crime = "kiling"
+    [
+      ask council
+      [
+        set commonWater commonWater + myWater
+        set commonWood commonWood + myWood
+        set commonFood commonFood + myFood
+        set commonHerbs commonHerbs + myHerbs
+      ]
+
+  ]
+  )
+
+end
+
+
 
 to-report getAge                                                   ;reports age from real life age distribution
   let n random 101

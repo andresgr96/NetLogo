@@ -365,12 +365,12 @@ to basicHumanAttributeManagement
 end
 
 
-to-report caughtChance                                               ;we implement also a negative influence on immoral decisions depending on the humans around the agent
+to-report caughtChance                                               ;adds a negative influence on immoral decisions by getting caught depending on the humans around the agent
   let witnesses other humans in-radius 5
   let prob 0
   foreach witnesses
   [
-    ifelse prob < 25
+    ifelse prob < 25                                                 ;keep stacking the probability to a max of 25
     [
       set prob prob + 5
     ]
@@ -378,8 +378,38 @@ to-report caughtChance                                               ;we impleme
       set prob prob
     ]
   ]
-
   report prob
+end
+
+to askHelp[resIndex]                                                          ;as another form of cooperation agents cna ultimatly ask for help from the camp mates
+  let campMates other humans with [survivalCamp = [survivalCamp] of myself]
+  let success? false
+  let toShare 0
+
+  ask campMates
+  [
+    foreach campMates
+    [
+      let chance random 101
+      let resource item resIndex backpack
+      let healthAdd ((health / 2) - 20)
+      let moralAdd (moralLevel / 2)
+      let resourceAdd (resource * 20)
+      let probSharing (healthAdd + moralAdd + resourceAdd)
+
+      if probSharing > chance
+      [
+        set backpack replace-item resIndex backpack (resource / 2)
+        set toShare (resource / 2)
+        set success? true
+      ]
+    ]
+  ]
+  if success? = true
+  [
+    let resource item resIndex backpack
+    set backpack replace-item resIndex backpack (resource + toShare)
+  ]
 end
 
 to explore

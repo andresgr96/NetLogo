@@ -563,7 +563,7 @@ to getPunished[crime]                                                           
   let myFood item 2 backpack
   let myHerbs item 3 backpack
 
-  (ifelse crime = "stealing"
+  (ifelse crime = "stealing"                                                               ;if they are caught stealing, they loose all their resources
   [
       ask council
       [
@@ -577,7 +577,7 @@ to getPunished[crime]                                                           
       set backpack replace-item 2 backpack 0
       set backpack replace-item 3 backpack 0
   ]
-  crime = "kiling"
+  crime = "kiling"                                                                         ;if they are caught killing, they are executed and their resources go to the council
     [
       ask council
       [
@@ -591,7 +591,6 @@ to getPunished[crime]                                                           
   )
 
 end
-
 
 
 to-report getAge                                                   ;reports age from real life age distribution

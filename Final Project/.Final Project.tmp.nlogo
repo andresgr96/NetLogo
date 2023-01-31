@@ -194,6 +194,7 @@ end
 to go
   seasonChange
   basicHumanAttributeManagement
+  idleWalk
   tick
 end
 
@@ -370,40 +371,6 @@ to-report caughtChance                                               ;adds a neg
   report prob
 end
 
-to askHelp[resIndex]                                                          ;as another form of cooperation agents cna ultimatly ask for help from the camp mates
-  let campMates other humans with [survivalCamp = [survivalCamp] of myself]
-  let success? false
-  let toShare 0
-
-  ask campMates
-  [
-    foreach campMates
-    [
-      let chance random 101
-      let resource item resIndex backpack
-      let healthAdd ((health / 2) - 20)
-      let moralAdd (moralLevel / 2)
-      let resourceAdd (resource * 20)
-      let probSharing (healthAdd + moralAdd + resourceAdd)
-
-      if probSharing > chance
-      [
-        set backpack replace-item resIndex backpack (resource / 2)
-        set toShare (resource / 2)
-        set success? true
-      ]
-    ]
-  ]
-  if success? = true
-  [
-    let resource item resIndex backpack
-    set backpack replace-item resIndex backpack (resource + toShare)
-  ]
-end
-
-
-
-
 
 to getResourceRation[resource]                                                     ;implements the ability of humans to get resources from councils resource storage
   let council campCouncils with [id = [survivalCamp] of myself]
@@ -445,17 +412,78 @@ to getResourceRation[resource]                                                  
     let res item resource backpack
     set backpack replace-item resource backpack (res + ration)
   ]
+end
 
+to askHelp[resIndex]                                                          ;as another form of cooperation agents cna ultimatly ask for help from the camp mates
+  let campMates other humans with [survivalCamp = [survivalCamp] of myself]
+  let success? false
+  let toShare 0
+
+  ask campMates
+  [
+    foreach campMates
+    [
+      let chance random 101
+      let resource item resIndex backpack
+      let healthAdd ((health / 2) - 20)
+      let moralAdd (moralLevel / 2)
+      let resourceAdd (resource * 20)
+      let probSharing (healthAdd + moralAdd + resourceAdd)
+
+      if probSharing > chance
+      [
+        set backpack replace-item resIndex backpack (resource / 2)
+        set toShare (resource / 2)
+        set success? true
+      ]
+    ]
+  ]
+  if success? = true
+  [
+    let resource item resIndex backpack
+    set backpack replace-item resIndex backpack (resource + toShare)
+  ]
+end
+
+to kill                                                                        ;as another form of competition agents can kill another agent for the resources in their backpack
+  let closeMates other humans with [survivalCamp = [survivalCamp] of myself] in-radius 5
+  let target min-one-of closeMates [distance myself]
+  let myWater item 0 backpack
+  let myWood item 1 backpack
+  let myFood item 2 backpack
+  let myHerbs item 3 backpack
+  let water 0
+  let wood 0
+  let food 0
+  let herbs 0
+
+  ask target
+  [
+    set water item 0 backpack
+    set wood item 1 backpack
+    set food item 2 backpack
+    set herbs item 3 backpack
+    die
+  ]
+  set backpack replace-item 0 backpack (myWater + water)
+  set backpack replace-item  backpack (myWater + water)
+  set backpack replace-item 0 backpack (myWater + water)
+  set backpack replace-item 0 backpack (myWater + water)
 
 end
 
-to explore
-  ask turtles with [breed = humans]
+
+
+to idleWalk
+  ask humans
   [
-    let newxcor xcor + (-1 + (random (1 - (-1))))
-    let newycor ycor + (-1 + (random (1 - (-1))))
-    set xcor newxcor
-    set ycor newycor
+    ifelse not [camp?] of patch-ahead 1
+    [
+      rt 180
+    ]
+    [
+      forward 1
+    ]
   ]
 end
 

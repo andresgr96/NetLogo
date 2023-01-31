@@ -1,4 +1,4 @@
-globals [season worldTemperature hungerFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter idCounter humansPlaced weekLength workEnergy]  ;the factors will be used to manipulate the need for each resource that a human has
+globals [season worldTemperature hungerFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter idCounter humansPlaced weekLength workEnergy initialJobAmount]  ;the factors will be used to manipulate the need for each resource that a human has
 breed [humans human]
 breed [campCouncils campCouncil]
 
@@ -68,6 +68,7 @@ to setup
   set idCounter 1
   set humansPlaced 0
   set workEnergy 0.5
+  set initialJobAmount (population / 4) / 4
   set weekLength (seasonduration / 3) / 4
   setupWorld
   setupHumans
@@ -219,10 +220,10 @@ to setupCouncils
   set commonWood 1000
   set commonFood 1000
   set commonHerbs 1000
-  set waterJobs 25
-  set woodJobs 5
-  set foodJobs 5
-  set herbsJobs 5
+  set waterJobs initialJobAmount
+  set woodJobs initialJobAmount
+  set foodJobs initialJobAmount
+  set herbsJobs initialJobAmount
   set waterRationList (list )
   set woodRationList (list )
   set herbsRationList (list )
@@ -381,27 +382,31 @@ to seasonManagement
 end
 
 to councilManagement
+  ;every week the camp has new jobs and clears the list of humans that received their rations
   if ticks mod weekLength = 0
   [
     ask CampCouncils
     [
-      set energy (energy - 1)
-      set hunger hunger - (10 - energy) + (random-float 1.2 * hungerFactor)
-      set thirst thirst + (random-float 1.2 * thirstFactor)
-      set coldness coldness + (random-float 1.2 * coldnessFactor)
-      set sickness sickness + (random-float 1.2 * sicknessFactor)
-      set health 90 + energy - hunger - coldness - thirst - sickness
-
-      if health < 70                                                   ;if the humans health is lower than 70, the moral level starts lowering
-      [
-        set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
-      ]
-      if health < 30
-      [
-        die
-      ]
+      set waterJobs initialJobAmount
+      set woodJobs initialJobAmount
+      set foodJobs initialJobAmount
+      set herbsJobs initialJobAmount
+      set waterRationList (list )
+      set woodRationList (list )
+      set herbsRationList (list )
+      set foodRationList (list )
     ]
   ]
+
+  ;manage rations depending on current common resource and amount of people on the camp
+  ask CampCouncils
+    [
+      let inhabitants count humans with [survivalCamp = [id] of myself]
+      set waterRation (commonWater / inhabitants) / 4
+      set woodRation (commonWood / inhabitants) / 4
+      set foodRation (commonFood / inhabitants) / 4
+      set herbsRation (commonHerbs / inhabitants) / 4
+    ]
 end
 
 

@@ -116,20 +116,20 @@ to setupWorld
     set workplace? true
   ]
 
-    ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 1]     ;set up workplace 2
+    ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 35]     ;set up workplace 2
   [
     set pcolor gray
     set workplace? true
   ]
 
-  ask patches with [pxcor < -10 and pxcor > -40 and pycor < -10 and pycor > -40]    ;set up workplace 3
+  ask patches with [pxcor < -10 and pxcor > -40 and pycor < -35 and pycor > -40]    ;set up workplace 3
   [
     set pcolor gray
     set workplace? true
   ]
 
 
-  ask patches with [pxcor < 40 and pxcor > 10 and pycor < -10 and pycor > -40]    ;set up workplace 4
+  ask patches with [pxcor < 40 and pxcor > 10 and pycor < -35 and pycor > -40]    ;set up workplace 4
   [
     set pcolor gray
     set workplace? true
@@ -392,14 +392,16 @@ end
 
 ;-------------------------------------------------------------------------------Human Actions--------------------------------------------------------------------------------
 
-to workForResource[resource]                                                     ;implements the ability of humans to get resources from councils resource storage
+to workForResource[resource]                                                                                     ;implements the ability of humans to work for resources
   let council campCouncils with [id = [survivalCamp] of myself]
-  face council
+  let workplaceArea patches with [campId = [survivalCamp] of myself and workplace? = true]
+  let randomStation one-of workplaceArea
+  face randomStation
   let newX precision (xcor + sin heading * 0.5) 2
   let newY precision (ycor + cos heading * 0.5) 2
-  let ration 0
+  let toReceive 0
 
-  ifelse not any? campCouncils with [xcor = newX and ycor = newY]
+  ifelse not [workplace? = true] of patch-here
   [
     set xcor newX
     set ycor newY
@@ -409,28 +411,31 @@ to workForResource[resource]                                                    
     [
       (ifelse resource = 0
         [
-          set ration waterRation
-          set commonWater commonWater - ration
+          set commonWater commonWater + waterProduction * 0.99
+          set toReceive waterProduction * 0.01
+          set waterJobs waterJobs - 1
         ]
       resource = 1
         [
-          set ration woodRation
-          set commonWood commonWood - ration
+          set commonWood commonWood + woodProduction * 0.99
+          set toReceive woodProduction * 0.01
+          set woodJobs woodJobs - 1
         ]
         resource = 2
         [
-          set ration foodRation
-          set commonFood commonFood - ration
+          set commonFood commonFood + foodProduction * 0.99
+          set toReceive foodProduction * 0.01
+          set waterJobs foodJobs - 1
         ]
         resource = 3
         [
-          set ration herbsRation
-          set commonHerbs commonHerbs - ration
+          set commonHerbs commonHerbs + herbsProduction * 0.99
+          set toReceive herbsProduction * 0.01
+          set herbsJobs herbsJobs - 1
         ])
-
     ]
     let res item resource backpack
-    set backpack replace-item resource backpack (res + ration)
+    set backpack replace-item resource backpack (res + ratio)
   ]
 end
 

@@ -26,6 +26,7 @@ patches-own
 [
   subPatches                                                      ;divides each patch into subpatches for precise human placement
   camp?                                                           ;is the patch a survival camp
+  workplace?                                                      ;is the patch a workplace
   campId                                                          ;identifies each camp
   storageId                                                       ;which storage belongs to the camp
 ]
@@ -53,6 +54,7 @@ campCouncils-own                                                  ;councils repr
 ]
 
 
+;-------------------------------------------------------------------------Model Setup Functions----------------------------------------------------------------------------
 to setup
   clear-all
   reset-ticks
@@ -62,7 +64,7 @@ to setup
   set weekLength (seasonduration / 3) / 4
   setupWorld
   setupHumans
-  setupStorages
+  setupCouncils
 end
 
 to setupWorld
@@ -70,6 +72,7 @@ to setupWorld
   [
     set pcolor 52
     set camp? false
+    set workplace? false
     set subPatches [nobody nobody nobody nobody]
   ]
 
@@ -105,6 +108,31 @@ to setupWorld
     set camp? true
     set campId 4
     set storageId 4
+  ]
+
+  ask patches with [pxcor < -10 and pxcor > -40 and pycor < 40 and pycor > 35]     ;set up workplace 1
+  [
+    set pcolor gray
+    set workplace? true
+  ]
+
+    ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 35]     ;set up workplace 2
+  [
+    set pcolor gray
+    set workplace? true
+  ]
+
+  ask patches with [pxcor < -10 and pxcor > -40 and pycor < -35 and pycor > -40]    ;set up workplace 3
+  [
+    set pcolor gray
+    set workplace? true
+  ]
+
+
+  ask patches with [pxcor < 40 and pxcor > 10 and pycor < -35 and pycor > -40]    ;set up workplace 4
+  [
+    set pcolor gray
+    set workplace? true
   ]
 end
 
@@ -156,8 +184,7 @@ to setupHumans
 
 end
 
-to setupStorages
-
+to setupCouncils
   create-campCouncils 4
   [
   let idList (list 1 2 3 4)
@@ -190,45 +217,6 @@ to setupStorages
   set storageCounter storageCounter + 1
   ]
 end
-
-to go
-  seasonChange
-  basicHumanAttributeManagement
-  idleWalk
-  tick
-end
-
-to-report getAge
-  let n random 101
-  let under20 33
-  let under40 65
-  let under60 78
-  let under80 100
-  let ageI 0
-
-  (ifelse n < under20
-    [
-      set ageI random 20
-    ]
-    under40 > n and n > under20
-    [
-    set ageI 20 + (random (39 - 20))
-    ]
-    under60 > n  and n > under40
-    [
-    set ageI 40 + (random (59 - 40))
-    ]
-    under80 > n and n > under60
-    [
-    set ageI 60 + (random (79 - 60))
-    ])
-  report ageI
-end
-
-;to findSurvivalCamp
-;  set xcor random-xcor
-;  set ycor random-ycor
-;end
 
 to findSurvivalCamp   ;code mostly taken from assignment 2
   let maxCapacity (population / 4)                                      ;we keep the population of each camp equal to avoid unnecesary randomness in the experiment
@@ -330,6 +318,14 @@ to findSurvivalCamp   ;code mostly taken from assignment 2
   )
 end
 
+to go
+  seasonManagement
+  basicHumanAttributeManagement
+  idleWalk
+  tick
+end
+
+;-------------------------------------------------------------------------Agent Management Systems----------------------------------------------------------------------------
 to basicHumanAttributeManagement
   if ticks mod weekLength = 0
   [
@@ -354,21 +350,88 @@ to basicHumanAttributeManagement
   ]
 end
 
-
-to-report caughtChance                                               ;adds a negative influence on immoral decisions by getting caught depending on the humans around the agent
-  let witnesses other humans in-radius 5
-  let prob 0
-  foreach witnesses
-  [
-    ifelse prob < 25                                                 ;keep stacking the probability to a max of 25
-    [
-      set prob prob + 5
-    ]
-    [
-      set prob prob
-    ]
+to seasonManagement
+ let seasonflow (list "spring" "summer" "fall" "winter")
+ if ticks mod seasonDuration = 0
+ [
+ (ifelse season = "spring"
+     [
+       set season "summer"
+       set thirstFactor 2
+       set sicknessFactor 1
+       set coldnessFactor 1
+       set hungerFactor 1
+     ]
+     season = "summer"
+     [
+       set season "fall"
+       set thirstFactor 1
+       set sicknessFactor 2
+       set coldnessFactor 1
+       set hungerFactor 1
+     ]
+      season = "fall"
+     [
+       set season "winter"
+       set thirstFactor 1
+       set sicknessFactor 1
+       set coldnessFactor 2
+       set hungerFactor 1
+     ]
+      season = "winter"
+     [
+       set season "spring"
+       set thirstFactor 1
+       set sicknessFactor 1
+       set coldnessFactor 1
+       set hungerFactor 2
+     ]
+    )
   ]
-  report prob
+end
+
+;-------------------------------------------------------------------------------Human Actions--------------------------------------------------------------------------------
+
+to workForResource[resource]                                                     ;implements the ability of humans to get resources from councils resource storage
+  let council campCouncils with [id = [survivalCamp] of myself]
+  face council
+  let newX precision (xcor + sin heading * 0.5) 2
+  let newY precision (ycor + cos heading * 0.5) 2
+  let ration 0
+
+  ifelse not any? campCouncils with [xcor = newX and ycor = newY]
+  [
+    set xcor newX
+    set ycor newY
+  ]
+  [
+    ask council
+    [
+      (ifelse resource = 0
+        [
+          set ration waterRation
+          set commonWater commonWater - ration
+        ]
+      resource = 1
+        [
+          set ration woodRation
+          set commonWood commonWood - ration
+        ]
+        resource = 2
+        [
+          set ration foodRation
+          set commonFood commonFood - ration
+        ]
+        resource = 3
+        [
+          set ration herbsRation
+          set commonHerbs commonHerbs - ration
+        ])
+
+    ]
+    let res item resource backpack
+    set backpack replace-item resource backpack (res + ration)
+  ]
 end
 
 
@@ -471,8 +534,6 @@ to kill                                                                        ;
   set backpack replace-item 3 backpack (myHerbs + herbs)
 end
 
-
-
 to idleWalk
   ask humans
   [
@@ -486,44 +547,51 @@ to idleWalk
   ]
 end
 
-to seasonChange
- let seasonflow (list "spring" "summer" "fall" "winter")
- if ticks mod seasonDuration = 0
- [
- (ifelse season = "spring"
-     [
-       set season "summer"
-       set thirstFactor 2
-       set sicknessFactor 1
-       set coldnessFactor 1
-       set hungerFactor 1
-     ]
-     season = "summer"
-     [
-       set season "fall"
-       set thirstFactor 1
-       set sicknessFactor 2
-       set coldnessFactor 1
-       set hungerFactor 1
-     ]
-      season = "fall"
-     [
-       set season "winter"
-       set thirstFactor 1
-       set sicknessFactor 1
-       set coldnessFactor 2
-       set hungerFactor 1
-     ]
-      season = "winter"
-     [
-       set season "spring"
-       set thirstFactor 1
-       set sicknessFactor 1
-       set coldnessFactor 1
-       set hungerFactor 2
-     ]
-    )
+
+;---------------------------------------------------------------------Reporters and Helper Functions--------------------------------------------------------------------------------
+
+to-report getAge                                                   ;reports age from real life age distribution
+  let n random 101
+  let under20 33
+  let under40 65
+  let under60 78
+  let under80 100
+  let ageI 0
+
+  (ifelse n < under20
+    [
+      set ageI random 20
+    ]
+    under40 > n and n > under20
+    [
+    set ageI 20 + (random (39 - 20))
+    ]
+    under60 > n  and n > under40
+    [
+    set ageI 40 + (random (59 - 40))
+    ]
+    under80 > n and n > under60
+    [
+    set ageI 60 + (random (79 - 60))
+    ])
+  report ageI
+end
+
+
+to-report caughtChance                                               ;adds a negative influence on immoral decisions by getting caught depending on the humans around the agent
+  let witnesses other humans in-radius 5
+  let prob 0
+  foreach witnesses
+  [
+    ifelse prob < 25                                                 ;keep stacking the probability to a max of 25
+    [
+      set prob prob + 5
+    ]
+    [
+      set prob prob
+    ]
   ]
+  report prob
 end
 
 to-report seasonReporter

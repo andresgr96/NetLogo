@@ -1,4 +1,4 @@
-globals [season worldTemperature plantingFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter humansPlaced weekLength]  ;the factors will be used to manipulate the need for each resource that a human has
+globals [season worldTemperature hungerFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter humansPlaced weekLength]  ;the factors will be used to manipulate the need for each resource that a human has
 breed [humans human]
 breed [campCouncils campCouncil]
 
@@ -9,7 +9,6 @@ humans-own
   age                                                             ;how old the human is and will affect energy and health
   energy                                                          ;how much stamina a human has, energy will be needed to perform any action like farming
   hunger                                                          ;the need for food a human has, and affects energy and health
-  planting                                                        ;the need for soil a human has, affects health
   coldness                                                         ;the need for wood of a human, affects health
   thirst                                                          ;the need for water of a human, affects health
   sickness                                                        ;the physical wellbeing of the human in terms of diseases, affects need for herbs and health
@@ -38,23 +37,19 @@ campCouncils-own                                                  ;councils repr
   commonWood                                                      ;current amount of wood in the camps common storage
   commonFood                                                      ;current amount of food in the camps common storage
   commonHerbs                                                     ;current amount of herbs in the camps common storage
-  commonSoil                                                      ;current amount of soil in the camps common storage
   waterRation                                                     ;max amount humans can get per day of water without stealing, dependant on common water
   woodRation                                                      ;max amount humans can get per day of wood without stealing, dependant on common wood
   foodRation                                                      ;max amount humans can get per day of food without stealing, dependant on common food
   herbsRation                                                     ;max amount humans can get per day of herbs without stealing, dependant on common herbs
-  soilRation                                                      ;max amount humans can get per day of soil without stealing, dependant on common soil
   numberOfHabitants                                               ;the current number of habitants of the camp
   waterJobs                                                       ;current amount of available jobs that produce water
   woodJobs                                                        ;current amount of available jobs that produce wood
   foodJobs                                                        ;current amount of available jobs that produce food
   herbsJobs                                                       ;current amount of available jobs that produce herbs
-  soilJobs                                                        ;current amount of available jobs that produce soil
   waterProduction                                                 ;production rate of water for any water job
   woodProduction                                                  ;production rate of wood for any wood job
   foodProduction                                                  ;production rate of food for any water job
   herbsProduction                                                 ;production rate of herbs for any herbs job
-  soilProduction                                                  ;production rate of soil for any soil job
 ]
 
 
@@ -141,7 +136,6 @@ to setupHumans
     set age getAge
     set energy 10
     set hunger 0
-    set planting 0
     set thirst 0
     set coldness 0
     set sickness 0
@@ -154,7 +148,7 @@ to setupHumans
       set moralLevel random 101
       set color green
     ]
-    set health 90 + energy - hunger - planting - coldness - thirst - sickness
+    set health 80 + energy - hunger  - coldness - thirst - sickness
     set backpack (list 0 0 0 0 0)
     set jobAssigned "none"
     findSurvivalCamp
@@ -172,8 +166,7 @@ to setupStorages
   let waterList (list 70 70 100 70)
   let woodList (list 100 70 70 70)
   let herbsList (list 70 70 70 100)
-  let soilList (list 70 100 70 70)
-  let foodList (list 70 70 70 70)
+  let foodList (list 70 100 70 70)
 
   set shape "square"
   set color gray
@@ -181,7 +174,6 @@ to setupStorages
   set waterProduction item storageCounter waterList
   set woodProduction item storageCounter woodList
   set herbsProduction item storageCounter herbsList
-  set soilProduction item storageCounter soilList
   set foodProduction item storageCounter foodList
   set id item storageCounter idList
   set xcor item storageCounter xcorList
@@ -191,12 +183,10 @@ to setupStorages
   set commonWood 1000
   set commonFood 1000
   set commonHerbs 1000
-  set commonSoil 1000
   set waterJobs 5
   set woodJobs 5
   set foodJobs 5
   set herbsJobs 5
-  set soilJobs 5
   set storageCounter storageCounter + 1
   ]
 end
@@ -345,18 +335,17 @@ to basicHumanAttributeManagement
     ask humans
     [
       set energy (energy - 1)
-      set hunger (10 - energy)
-      set planting planting + (random-float 0.6 * plantingFactor)
-      set thirst thirst + (random-float 0.6 * thirstFactor)
-      set coldness coldness + (random-float 0.6 * coldnessFactor)
-      set sickness sickness + (random-float 0.3 * sicknessFactor)
-      set health 90 + energy - hunger - planting - coldness - thirst
+      set hunger hunger - (10 - energy) + (random-float 1.2 * hungerFactor)
+      set thirst thirst + (random-float 1.2 * thirstFactor)
+      set coldness coldness + (random-float 1.2 * coldnessFactor)
+      set sickness sickness + (random-float 1.2 * sicknessFactor)
+      set health 90 + energy - hunger - coldness - thirst - sickness
 
-      if health < 70                                                   ;if the humans health is lower than 60, the moral level starts lowering
+      if health < 70                                                   ;if the humans health is lower than 70, the moral level starts lowering
       [
         set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
       ]
-      if health < 20
+      if health < 30
       [
         die
       ]
@@ -381,7 +370,7 @@ to-report caughtChance                                               ;adds a neg
   report prob
 end
 
-to askHelp[resIndex]                                                          ;as another form of cooperation agents cna ultimatly ask for h
+to askHelp[resIndex]                                                          ;as another form of cooperation agents cna ultimatly ask for help from the camp mates
   let campMates other humans with [survivalCamp = [survivalCamp] of myself]
   let success? false
   let toShare 0
@@ -412,6 +401,54 @@ to askHelp[resIndex]                                                          ;a
   ]
 end
 
+
+
+
+
+to getResourceRation[resource]                                                     ;implements the ability of humans to get resources from councils resource storage
+  let council campCouncils with [id = [survivalCamp] of myself]
+  face council
+  let newX precision (xcor + sin heading * 0.5) 2
+  let newY precision (ycor + cos heading * 0.5) 2
+  let ration 0
+
+  ifelse not any? campCouncils with [xcor = newX and ycor = newY]
+  [
+    set xcor newX
+    set ycor newY
+  ]
+  [
+    ask council
+    [
+      (ifelse resource = 0
+        [
+          set ration waterRation
+          set commonWater commonWater - ration
+        ]
+      resource = 1
+        [
+          set ration woodRation
+          set commonWood commonWood - ration
+        ]
+        resource = 2
+        [
+          set ration foodRation
+          set commonFood commonFood - ration
+        ]
+        resource = 3
+        [
+          set ration herbsRation
+          set commonHerbs commonHerbs - ration
+        ])
+
+    ]
+    let res item resource backpack
+    set backpack replace-item resource backpack (res + ration)
+  ]
+
+
+end
+
 to explore
   ask turtles with [breed = humans]
   [
@@ -432,7 +469,7 @@ to seasonChange
        set thirstFactor 2
        set sicknessFactor 1
        set coldnessFactor 1
-       set plantingFactor 1
+       set hungerFactor 1
      ]
      season = "summer"
      [
@@ -440,7 +477,7 @@ to seasonChange
        set thirstFactor 1
        set sicknessFactor 2
        set coldnessFactor 1
-       set plantingFactor 1
+       set hungerFactor 1
      ]
       season = "fall"
      [
@@ -448,7 +485,7 @@ to seasonChange
        set thirstFactor 1
        set sicknessFactor 1
        set coldnessFactor 2
-       set plantingFactor 1
+       set hungerFactor 1
      ]
       season = "winter"
      [
@@ -456,7 +493,7 @@ to seasonChange
        set thirstFactor 1
        set sicknessFactor 1
        set coldnessFactor 1
-       set plantingFactor 2
+       set hungerFactor 2
      ]
     )
   ]

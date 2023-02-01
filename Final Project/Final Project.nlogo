@@ -411,59 +411,202 @@ end
 
 
 to humanBehaviourManagement
-
   ask humans
   [
+    let humanId id
+    let myWater item 0 backpack
+    let myWood item 1 backpack
+    let myFood item 2 backpack
+    let myHerbs item 3 backpack
+    let waterRationTaken? false
+    let woodRationTaken? false
+    let foodRationTaken? false
+    let herbsRationTaken? false
+
+    let council campCouncils with [id = [survivalCamp] of myself]
+    ask council
+    [
+      if member? humanId waterRationList
+      [
+        set waterRationTaken? false
+      ]
+      if member? humanId woodRationList
+      [
+        set woodRationTaken? false
+      ]
+      if member? humanId foodRationList
+      [
+        set foodRationTaken? false
+      ]
+      if member? humanId herbsRationList
+      [
+        set herbsRationTaken? false
+      ]
+    ]
+
     (ifelse thirst <= needThreshold and bussy? = false
       [
         (ifelse energy > workEnergy
           [
             workForResource[0]
           ]
-          energy <= workEnergy and member? id waterRationList = false
+          energy <= workEnergy and waterRationTaken? = false
           [
             getResourceRation[0]
           ]
+          energy <= workEnergy and waterRationTaken? = true and myWater > 0
+          [
+            getResourceBackpack[0]
+          ]
+          energy <= workEnergy and waterRationTaken? = true and myWater = 0
+          [
+            let caughtProbability caughtChance
+            let actionProbability random-float 101
+            let actionScore (moralLevel * 0.7) + (health * 0.3) + caughtProbability
+            let difference actionProbability - actionScore
+            (ifelse actionScore < actionProbability
+               [
+                 (ifelse difference < 30
+                   [
+                     getResourceRation[0]
+                   ]
+                   difference >= 30
+                   [
+                     killForResources
+                   ]
+                 )
+               ]
+             actionScore >= actionProbability
+              [
+                askHelp[0]
+              ]
+             )
+          ]
         )
-
       ]
-      coldness <= needThreshold and bussy? = false and energy > workEnergy
+      coldness <= needThreshold and bussy? = false
       [
-        workForResource[1]
+        (ifelse energy > workEnergy
+          [
+            workForResource[1]
+          ]
+          energy <= workEnergy and woodRationTaken? = false
+          [
+            getResourceRation[1]
+          ]
+          energy <= workEnergy and woodRationTaken? = true and myWood > 0
+          [
+            getResourceBackpack[1]
+          ]
+          energy <= workEnergy and woodRationTaken? = true and myWood = 0
+          [
+            let caughtProbability caughtChance
+            let actionProbability random-float 101
+            let actionScore (moralLevel * 0.7) + (health * 0.3) + caughtProbability
+            let difference actionProbability - actionScore
+            (ifelse actionScore < actionProbability
+               [
+                 (ifelse difference < 30
+                   [
+                     getResourceRation[1]
+                   ]
+                   difference >= 30
+                   [
+                     killForResources
+                   ]
+                 )
+               ]
+             actionScore >= actionProbability
+              [
+                askHelp[1]
+              ]
+             )
+          ]
+        )
       ]
-      hunger <= needThreshold and bussy? = false and energy > workEnergy
+      hunger <= needThreshold and bussy? = false
       [
-        workForResource[1]
+        (ifelse energy > workEnergy
+          [
+            workForResource[2]
+          ]
+          energy <= workEnergy and foodRationTaken? = false
+          [
+            getResourceRation[2]
+          ]
+          energy <= workEnergy and foodRationTaken? and myFood > 0
+          [
+            getResourceBackpack[2]
+          ]
+          energy <= workEnergy and foodRationTaken? = true and myFood = 0
+          [
+            let caughtProbability caughtChance
+            let actionProbability random-float 101
+            let actionScore (moralLevel * 0.7) + (health * 0.3) + caughtProbability
+            let difference actionProbability - actionScore
+            (ifelse actionScore < actionProbability
+               [
+                 (ifelse difference < 30
+                   [
+                     getResourceRation[2]
+                   ]
+                   difference >= 30
+                   [
+                     killForResources
+                   ]
+                 )
+               ]
+             actionScore >= actionProbability
+              [
+                askHelp[2]
+              ]
+             )
+          ]
+        )
       ]
-      coldness <= needThreshold and bussy? = false and energy > workEnergy
+      sickness <= needThreshold and bussy? = false
       [
-        workForResource[1]
+        (ifelse energy > workEnergy
+          [
+            workForResource[3]
+          ]
+          energy <= workEnergy and herbsRationTaken? = false
+          [
+            getResourceRation[3]
+          ]
+          energy <= workEnergy and herbsRationTaken? = true and myHerbs > 0
+          [
+            getResourceBackpack[3]
+          ]
+          energy <= workEnergy and herbsRationTaken? = true and myHerbs = 0
+          [
+            let caughtProbability caughtChance
+            let actionProbability random-float 101
+            let actionScore (moralLevel * 0.7) + (health * 0.3) + caughtProbability
+            let difference actionProbability - actionScore
+            (ifelse actionScore < actionProbability
+               [
+                 (ifelse difference < 30
+                   [
+                     getResourceRation[3]
+                   ]
+                   difference >= 30
+                   [
+                     killForResources
+                   ]
+                 )
+               ]
+             actionScore >= actionProbability
+              [
+                askHelp[3]
+              ]
+             )
+          ]
+        )
       ]
 
     )
   ]
-  if ticks mod weekLength = 0
-  [
-    ask humans
-    [
-      set energy (energy - 1)
-      set hunger hunger - (10 - energy) + (random-float 1.2 * hungerFactor)
-      set thirst thirst + (random-float 1.2 * thirstFactor)
-      set coldness coldness + (random-float 1.2 * coldnessFactor)
-      set sickness sickness + (random-float 1.2 * sicknessFactor)
-      set health 90 + energy - hunger - coldness - thirst - sickness
-
-      if health < 70                                                   ;if the humans health is lower than 70, the moral level starts lowering
-      [
-        set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
-      ]
-      if health < 30
-      [
-        die
-      ]
-    ]
-  ]
-
 end
 
 to basicHumanAttributeManagement
@@ -586,6 +729,31 @@ to getResourceRation[resource]                                                  
   ]
 end
 
+to getResourceBackpack[resource]                                                     ;implements the ability of humans to get resources backpack
+  let res item resource backpack
+  (ifelse resource = 0
+    [
+      set thirst thirst - res
+      set backpack replace-item resource backpack 0
+    ]
+    resource = 1
+    [
+      set coldness coldness - res
+      set backpack replace-item resource backpack 0
+    ]
+    resource = 2
+    [
+      set hunger hunger - res
+      set backpack replace-item resource backpack 0
+    ]
+    resource = 3
+    [
+      set sickness sickness - res
+      set backpack replace-item resource backpack 0
+  ])
+end
+
+
 to askHelp[resIndex]                                                          ;as another form of cooperation agents cna ultimatly ask for help from the camp mates
   let campMates other humans with [survivalCamp = [survivalCamp] of myself]
   let success? false
@@ -614,7 +782,7 @@ to askHelp[resIndex]                                                          ;a
   ]
 end
 
-to kill                                                                        ;as another form of competition agents can kill another agent for the resources in their backpack
+to killForResources                                                                        ;as another form of competition agents can kill another agent for the resources in their backpack
   let closeMates other humans with [survivalCamp = [survivalCamp] of myself] in-radius 5
   let target min-one-of closeMates [distance myself]
   let myWater item 0 backpack

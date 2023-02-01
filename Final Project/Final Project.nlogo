@@ -334,7 +334,9 @@ end
 to go
   seasonManagement
   basicHumanAttributeManagement
-  idleWalk
+  humanBehaviourManagement
+  councilManagement
+
   tick
 end
 
@@ -413,6 +415,8 @@ end
 to humanBehaviourManagement
   ask humans
   [
+    if not bussy?                                                                                            ;agent checks first if its bussy performing a durative action before considering others, helps avoid stuck agents due to trying to follow many actions
+    [
     let humanId id
     let myWater item 0 backpack
     let myWood item 1 backpack
@@ -444,19 +448,19 @@ to humanBehaviourManagement
       ]
     ]
 
-    (ifelse thirst <= needThreshold and bussy? = false
+    (ifelse thirst <= needThreshold
       [
         (ifelse energy > workEnergy
           [
-            workForResource[0]
+            workForResource 0
           ]
           energy <= workEnergy and waterRationTaken? = false
           [
-            getResourceRation[0]
+            getResourceRation 0
           ]
           energy <= workEnergy and waterRationTaken? = true and myWater > 0
           [
-            getResourceBackpack[0]
+            getResourceBackpack 0
           ]
           energy <= workEnergy and waterRationTaken? = true and myWater = 0
           [
@@ -468,7 +472,7 @@ to humanBehaviourManagement
                [
                  (ifelse difference < 30
                    [
-                     getResourceRation[0]
+                     getResourceRation 0
                    ]
                    difference >= 30
                    [
@@ -478,25 +482,25 @@ to humanBehaviourManagement
                ]
              actionScore >= actionProbability
               [
-                askHelp[0]
+                askHelp 0
               ]
              )
           ]
         )
       ]
-      coldness <= needThreshold and bussy? = false
+      coldness <= needThreshold
       [
         (ifelse energy > workEnergy
           [
-            workForResource[1]
+            workForResource 1
           ]
           energy <= workEnergy and woodRationTaken? = false
           [
-            getResourceRation[1]
+            getResourceRation 1
           ]
           energy <= workEnergy and woodRationTaken? = true and myWood > 0
           [
-            getResourceBackpack[1]
+            getResourceBackpack 1
           ]
           energy <= workEnergy and woodRationTaken? = true and myWood = 0
           [
@@ -508,7 +512,7 @@ to humanBehaviourManagement
                [
                  (ifelse difference < 30
                    [
-                     getResourceRation[1]
+                     getResourceRation 1
                    ]
                    difference >= 30
                    [
@@ -518,25 +522,25 @@ to humanBehaviourManagement
                ]
              actionScore >= actionProbability
               [
-                askHelp[1]
+                askHelp 1
               ]
              )
           ]
         )
       ]
-      hunger <= needThreshold and bussy? = false
+      hunger <= needThreshold
       [
         (ifelse energy > workEnergy
           [
-            workForResource[2]
+            workForResource 2
           ]
           energy <= workEnergy and foodRationTaken? = false
           [
-            getResourceRation[2]
+            getResourceRation 2
           ]
           energy <= workEnergy and foodRationTaken? and myFood > 0
           [
-            getResourceBackpack[2]
+            getResourceBackpack 2
           ]
           energy <= workEnergy and foodRationTaken? = true and myFood = 0
           [
@@ -548,7 +552,7 @@ to humanBehaviourManagement
                [
                  (ifelse difference < 30
                    [
-                     getResourceRation[2]
+                     getResourceRation 2
                    ]
                    difference >= 30
                    [
@@ -558,25 +562,25 @@ to humanBehaviourManagement
                ]
              actionScore >= actionProbability
               [
-                askHelp[2]
+                askHelp 2
               ]
              )
           ]
         )
       ]
-      sickness <= needThreshold and bussy? = false
+      sickness <= needThreshold
       [
         (ifelse energy > workEnergy
           [
-            workForResource[3]
+            workForResource 3
           ]
           energy <= workEnergy and herbsRationTaken? = false
           [
-            getResourceRation[3]
+            getResourceRation 3
           ]
           energy <= workEnergy and herbsRationTaken? = true and myHerbs > 0
           [
-            getResourceBackpack[3]
+            getResourceBackpack 3
           ]
           energy <= workEnergy and herbsRationTaken? = true and myHerbs = 0
           [
@@ -588,7 +592,7 @@ to humanBehaviourManagement
                [
                  (ifelse difference < 30
                    [
-                     getResourceRation[3]
+                     getResourceRation 3
                    ]
                    difference >= 30
                    [
@@ -598,15 +602,16 @@ to humanBehaviourManagement
                ]
              actionScore >= actionProbability
               [
-                askHelp[3]
+                askHelp 3
               ]
              )
           ]
         )
       ]
-
     )
+    ]
   ]
+
 end
 
 to basicHumanAttributeManagement
@@ -614,11 +619,11 @@ to basicHumanAttributeManagement
   [
     ask humans
     [
-      set energy (energy - 1)
-      set hunger hunger - (10 - energy) + (random-float 1.2 * hungerFactor)
-      set thirst thirst + (random-float 1.2 * thirstFactor)
-      set coldness coldness + (random-float 1.2 * coldnessFactor)
-      set sickness sickness + (random-float 1.2 * sicknessFactor)
+      set energy (energy - 2)
+      set hunger hunger - (10 - energy) + (random-float 4 * hungerFactor)
+      set thirst thirst + (random-float 4 * thirstFactor)
+      set coldness coldness + (random-float 4 * coldnessFactor)
+      set sickness sickness + (random-float 4 * sicknessFactor)
       set health 90 + energy - hunger - coldness - thirst - sickness
 
       if health < 70                                                   ;if the humans health is lower than 70, the moral level starts lowering
@@ -636,19 +641,30 @@ end
 ;---------------------------------------------------------------------------------------------Human Actions--------------------------------------------------------------------------------
 
 to workForResource[resource]                                                                                     ;implements the ability of humans to work for resources
+  set bussy? true
   let council campCouncils with [id = [survivalCamp] of myself]
   let workplaceArea patches with [campId = [survivalCamp] of myself and workplace? = true]
   let randomStation one-of workplaceArea
   face randomStation
-  let newX precision (xcor + sin heading * 0.5) 2
-  let newY precision (ycor + cos heading * 0.5) 2
   let toReceive 0
+  let atWorkPlace? false
 
-  ifelse not [workplace? = true] of patch-here
+  while [atWorkPlace? = false]
   [
-    set xcor newX
-    set ycor newY
+    let newX precision (xcor + sin heading * 0.5) 2
+    let newY precision (ycor + cos heading * 0.5) 2
+    (ifelse not [workPlace?] of patch-ahead 1
+    [
+      set xcor newX
+      set ycor newY
+    ]
+    [workPlace?] of patch-ahead 1
+    [
+      set atWorkPlace? true
+    ]
+    )
   ]
+  if atWorkPlace?
   [
     ask council
     [
@@ -679,22 +695,34 @@ to workForResource[resource]                                                    
     ]
     let res item resource backpack
     set backpack replace-item resource backpack (res + toReceive)
+    set bussy? false
   ]
 end
 
 
 to getResourceRation[resource]                                                     ;implements the ability of humans to get resources from councils resource storage
-  let council campCouncils with [id = [survivalCamp] of myself]
+  set bussy? true
+  let council one-of campCouncils with [id = [survivalCamp] of myself]
   face council
-  let newX precision (xcor + sin heading * 0.5) 2
-  let newY precision (ycor + cos heading * 0.5) 2
   let ration 0
+  let atCouncil? false
 
-  ifelse not any? campCouncils with [xcor = newX and ycor = newY]
+  while [atCouncil? = false]
   [
-    set xcor newX
-    set ycor newY
+    let newX precision (xcor + sin heading * 0.5) 2
+    let newY precision (ycor + cos heading * 0.5) 2
+    (ifelse not any? campCouncils with [xcor = newX and ycor = newY]
+    [
+      set xcor newX
+      set ycor newY
+    ]
+    any? campCouncils with [xcor = newX and ycor = newY]
+    [
+        set atCouncil? true
+    ]
+    )
   ]
+  if atCouncil? = true
   [
     ask council
     [
@@ -726,10 +754,12 @@ to getResourceRation[resource]                                                  
     ]
     let res item resource backpack
     set backpack replace-item resource backpack (res + ration)
+    set bussy? false
   ]
 end
 
 to getResourceBackpack[resource]                                                     ;implements the ability of humans to get resources backpack
+  set bussy? true
   let res item resource backpack
   (ifelse resource = 0
     [
@@ -751,10 +781,12 @@ to getResourceBackpack[resource]                                                
       set sickness sickness - res
       set backpack replace-item resource backpack 0
   ])
+  set bussy? false
 end
 
 
 to askHelp[resIndex]                                                          ;as another form of cooperation agents cna ultimatly ask for help from the camp mates
+  set bussy? true
   let campMates other humans with [survivalCamp = [survivalCamp] of myself]
   let success? false
   let toShare 0
@@ -780,9 +812,12 @@ to askHelp[resIndex]                                                          ;a
     let resource item resIndex backpack
     set backpack replace-item resIndex backpack (resource + toShare)
   ]
+  set bussy? false
 end
 
 to killForResources                                                                        ;as another form of competition agents can kill another agent for the resources in their backpack
+
+  set bussy? true
   let closeMates other humans with [survivalCamp = [survivalCamp] of myself] in-radius 5
   let target min-one-of closeMates [distance myself]
   let myWater item 0 backpack
@@ -806,10 +841,11 @@ to killForResources                                                             
   set backpack replace-item 1 backpack (myWood + wood)
   set backpack replace-item 2 backpack (myFood + food)
   set backpack replace-item 3 backpack (myHerbs + herbs)
+  set bussy? false
 end
 
 to idleWalk
-  ask humans
+  if not bussy?
   [
     ifelse not [camp?] of patch-ahead 1
     [
@@ -819,6 +855,7 @@ to idleWalk
       forward 1
     ]
   ]
+
 end
 
 
@@ -869,6 +906,7 @@ to-report getAge                                                   ;reports age 
   let under60 78
   let under80 100
   let ageI 0
+
 
   (ifelse n < under20
     [
@@ -1010,7 +1048,7 @@ seasonDuration
 seasonDuration
 10
 1200
-1200.0
+150.0
 10
 1
 NIL

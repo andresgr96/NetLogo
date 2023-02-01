@@ -704,7 +704,7 @@ to workForResource[resource]                                                    
   let food item 2 backpack
   let herbs item 3 backpack
 
-  while [counter < 5 and [workPlace? = false] of patch-here]
+  while [counter < 5 ]
   [
     let newX precision (xcor + sin heading * 0.5) 2
     let newY precision (ycor + cos heading * 0.5) 2

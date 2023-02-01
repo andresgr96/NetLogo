@@ -1,4 +1,4 @@
-globals [season worldTemperature hungerFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter idCounter humansPlaced weekLength workEnergy initialJobAmount]  ;the factors will be used to manipulate the need for each resource that a human has
+globals [season worldTemperature hungerFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter idCounter humansPlaced weekLength workEnergy initialJobAmount needThreshold]  ;the factors will be used to manipulate the need for each resource that a human has
 breed [humans human]
 breed [campCouncils campCouncil]
 
@@ -16,8 +16,7 @@ humans-own
   moralLevel                                                      ;how "good or bad" a human is, affects the probabilities of choosing survival actions
   health                                                          ;the overall health of the human, affects moral level value
   backpack                                                        ;the personal storage of a human for resources
-  jobAssigned                                                     ;the type of job currently assigned to the human
-  working?                                                        ;if the human is currently on a job
+  bussy?                                                          ;if the human is currently performing an action, this will help avoid the agent trying to do multiple actions at the same time and getting stuck (i hope xd)
   alive?                                                          ;if the human is alive or ded
   survivalCamp                                                    ;the survival camp the human is part of
 ]
@@ -68,6 +67,7 @@ to setup
   set idCounter 1
   set humansPlaced 0
   set workEnergy 0.5
+  set needThreshold 5
   set initialJobAmount (population / 4) / 4
   set weekLength (seasonduration / 3) / 4
   setupWorld
@@ -168,7 +168,7 @@ to setupHumans
     ]
     set shape "person"
     set alive? true
-    set working? false
+    set bussy? false
     set id idCounter
     set age getAge
     set energy 10
@@ -187,7 +187,6 @@ to setupHumans
     ]
     set health 80 + energy - hunger  - coldness - thirst - sickness
     set backpack (list 0 0 0 0 0)
-    set jobAssigned "none"
     findSurvivalCamp
     set idCounter idCounter + 1
   ]
@@ -411,6 +410,62 @@ end
 
 
 
+to humanBehaviourManagement
+
+  ask humans
+  [
+    (ifelse thirst <= needThreshold and bussy? = false
+      [
+        (ifelse energy > workEnergy
+          [
+            workForResource[0]
+          ]
+          energy <= workEnergy and member? id waterRationList = false
+          [
+            getResourceRation[0]
+          ]
+        )
+
+      ]
+      coldness <= needThreshold and bussy? = false and energy > workEnergy
+      [
+        workForResource[1]
+      ]
+      hunger <= needThreshold and bussy? = false and energy > workEnergy
+      [
+        workForResource[1]
+      ]
+      coldness <= needThreshold and bussy? = false and energy > workEnergy
+      [
+        workForResource[1]
+      ]
+
+    )
+  ]
+  if ticks mod weekLength = 0
+  [
+    ask humans
+    [
+      set energy (energy - 1)
+      set hunger hunger - (10 - energy) + (random-float 1.2 * hungerFactor)
+      set thirst thirst + (random-float 1.2 * thirstFactor)
+      set coldness coldness + (random-float 1.2 * coldnessFactor)
+      set sickness sickness + (random-float 1.2 * sicknessFactor)
+      set health 90 + energy - hunger - coldness - thirst - sickness
+
+      if health < 70                                                   ;if the humans health is lower than 70, the moral level starts lowering
+      [
+        set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
+      ]
+      if health < 30
+      [
+        die
+      ]
+    ]
+  ]
+
+end
+
 to basicHumanAttributeManagement
   if ticks mod weekLength = 0
   [
@@ -538,21 +593,18 @@ to askHelp[resIndex]                                                          ;a
 
   ask campMates
   [
-    foreach campMates
-    [
-      let chance random 101
-      let resource item resIndex backpack
-      let healthAdd ((health / 2) - 20)
-      let moralAdd (moralLevel / 2)
-      let resourceAdd (resource * 20)
-      let probSharing (healthAdd + moralAdd + resourceAdd)
+    let chance random 101
+    let resource item resIndex backpack
+    let healthAdd ((health / 2) - 20)
+    let moralAdd (moralLevel / 2)
+    let resourceAdd (resource * 20)
+    let probSharing (healthAdd + moralAdd + resourceAdd)
 
-      if probSharing > chance and success? = false
-      [
-        set backpack replace-item resIndex backpack (resource / 2)
-        set toShare (resource / 2)
-        set success? true
-      ]
+    if probSharing > chance and success? = false
+    [
+      set backpack replace-item resIndex backpack (resource / 2)
+      set toShare (resource / 2)
+      set success? true
     ]
   ]
   if success? = true

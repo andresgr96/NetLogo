@@ -1,5 +1,4 @@
-globals [season worldTemperature hungerFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter idCounter humansPlaced weekLength workEnergy initialJobAmount healthThreshold killed stolen waterConsumed woodConsumed foodConsumed herbsConsumed timesRation timesWorked timesBackpack avgCouncilWater avgCouncilWood avgCouncilFood avgCouncilHerbs
-avgCouncilWaterJobs avgCouncilWoodJobs avgCouncilFoodJobs avgCouncilHerbsJobs]  ;the factors will be used to manipulate the need for each resource that a human has
+globals [season worldTemperature hungerFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter idCounter humansPlaced weekLength workEnergy initialJobAmount needThreshold killed stolen]  ;the factors will be used to manipulate the need for each resource that a human has
 breed [humans human]
 breed [campCouncils campCouncil]
 
@@ -67,25 +66,10 @@ to setup
   set storageCounter 0
   set idCounter 1
   set humansPlaced 0
-  set workEnergy 2
-  set healthThreshold 70
+  set workEnergy 4
+  set needThreshold 3
   set killed 0
   set stolen 0
-  set waterConsumed 0
-  set woodConsumed 0
-  set foodConsumed 0
-  set herbsConsumed 0
-  set timesBackpack 0
-  set timesWorked 0
-  set timesRation 0
-  set avgCouncilWater 0
-  set avgCouncilWood 0
-  set avgCouncilFood 0
-  set avgCouncilHerbs 0
-  set avgCouncilWaterJobs 0
-  set avgCouncilWoodJobs 0
-  set avgCouncilFoodJobs 0
-  set avgCouncilHerbsJobs 0
   set initialJobAmount (population / 4) / 4
   set weekLength (seasonduration / 3) / 4
   setupWorld
@@ -196,11 +180,11 @@ to setupHumans
     set sickness 0
     ifelse morality = "immoral"
     [
-      set moralLevel 10 + (random (61 - 10))
+      set moralLevel random 71
       set color red
     ]
     [
-      set moralLevel 50 + (random (101 - 50))
+      set moralLevel random 101
       set color green
     ]
     set health 80 + energy - hunger  - coldness - thirst - sickness
@@ -217,10 +201,11 @@ to setupCouncils
   let idList (list 1 2 3 4)
   let xcorList (list -25 25 -25 25 )
   let ycorList (list 25 25 -25 -25)
-  let waterList (list 7 7 10 7)
-  let woodList (list 10 7 7 7)
-  let herbsList (list 7 7 7 10)
-  let foodList (list 7 10 7 7)
+  let waterList (list 700 700 1000 700)
+  let woodList (list 1000 700 700 700)
+  let herbsList (list 700 700 700 1000)
+  let foodList (list 700 1000 700 700)
+
   set shape "square"
   set color gray
   set size 5
@@ -232,14 +217,14 @@ to setupCouncils
   set xcor item storageCounter xcorList
   set ycor item storageCounter ycorList
   set numberOfHabitants population / 4
-  set commonWater 0
-  set commonWood 0
-  set commonFood 0
-  set commonHerbs 0
-  set waterJobs numberOfHabitants
-  set woodJobs numberOfHabitants
-  set foodJobs numberOfHabitants
-  set herbsJobs numberOfHabitants
+  set commonWater 100
+  set commonWood 100
+  set commonFood 100
+  set commonHerbs 100
+  set waterJobs initialJobAmount
+  set woodJobs initialJobAmount
+  set foodJobs initialJobAmount
+  set herbsJobs initialJobAmount
   set waterRationList (list )
   set woodRationList (list )
   set herbsRationList (list )
@@ -248,14 +233,114 @@ to setupCouncils
   ]
 end
 
+to findSurvivalCamp   ;code mostly taken from assignment 2
+  let maxCapacity (population / 4)                                      ;we keep the population of each camp equal to avoid unnecesary randomness in the experiment
+  (ifelse humansPlaced < maxCapacity                                    ;populate camp 1
+    [
+      let success false
+      while [success = false]
+      [
+        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 1]
+        let subPlace random 4
+        if [item subPlace subPatches] of place = nobody
+        [
+          ask place                    ;adds agent to one of the subpatches of a patch
+          [                            ;note that myself here refers to the agent that askes the patch to do something
+            set subPatches replace-item subPlace subPatches myself
+          ]
+          set survivalCamp [campId] of place
+          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
+          ifelse subPlace < 2
+          [ set ycor [pycor] of place + 0.25]
+          [ set ycor [pycor] of place - 0.25]
+          set success true
+          set humansPlaced humansPlaced + 1
+        ]
+      ]
+    ]
+
+    humansPlaced >= maxCapacity and humansPlaced < (maxCapacity * 2)   ;populate camp 2
+    [
+      let success false
+      while [success = false]
+      [
+        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 2]
+        let subPlace random 4
+        if [item subPlace subPatches] of place = nobody
+        [
+          ask place                    ;adds agent to one of the subpatches of a patch
+          [                            ;note that myself here refers to the agent that askes the patch to do something
+            set subPatches replace-item subPlace subPatches myself
+          ]
+          set survivalCamp [campId] of place
+          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
+          ifelse subPlace < 2
+          [ set ycor [pycor] of place + 0.25]
+          [ set ycor [pycor] of place - 0.25]
+          set success true
+          set humansPlaced humansPlaced + 1
+        ]
+      ]
+    ]
+
+    humansPlaced >= (maxCapacity * 2) and humansPlaced < (maxCapacity * 3)   ;populate camp 2
+    [
+      let success false
+      while [success = false]
+      [
+        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 3]
+        let subPlace random 4
+        if [item subPlace subPatches] of place = nobody
+        [
+          ask place                    ;adds agent to one of the subpatches of a patch
+          [                            ;note that myself here refers to the agent that askes the patch to do something
+            set subPatches replace-item subPlace subPatches myself
+          ]
+          set survivalCamp [campId] of place
+          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
+          ifelse subPlace < 2
+          [ set ycor [pycor] of place + 0.25]
+          [ set ycor [pycor] of place - 0.25]
+          set success true
+          set humansPlaced humansPlaced + 1
+        ]
+      ]
+    ]
+
+    humansPlaced >= (maxCapacity * 3) and humansPlaced < population       ;populate camp 2
+    [
+      let success false
+      while [success = false]
+      [
+        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 4]
+        let subPlace random 4
+        if [item subPlace subPatches] of place = nobody
+        [
+          ask place                    ;adds agent to one of the subpatches of a patch
+          [                            ;note that myself here refers to the agent that askes the patch to do something
+            set subPatches replace-item subPlace subPatches myself
+          ]
+          set survivalCamp [campId] of place
+          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
+          ifelse subPlace < 2
+          [ set ycor [pycor] of place + 0.25]
+          [ set ycor [pycor] of place - 0.25]
+          set success true
+          set humansPlaced humansPlaced + 1
+        ]
+      ]
+    ]
+  )
+end
+
 to go
   seasonManagement
   basicHumanAttributeManagement
   humanBehaviourManagement
   councilManagement
-;  let totalPopulation count humans
-;  if totalPopulation < 25
-;  [stop]
+  let totalPopulation count humans
+  if totalPopulation < 25
+  [stop]
 
   tick
 end
@@ -306,9 +391,8 @@ to councilManagement
   ;every week the camp has new jobs and clears the list of humans that received their rations
   if ticks mod weekLength = 0
   [
-    ask campCouncils
+    ask CampCouncils
     [
-      let inhabitants count humans with [survivalCamp = [id] of myself]
       set waterJobs initialJobAmount
       set woodJobs initialJobAmount
       set foodJobs initialJobAmount
@@ -317,15 +401,11 @@ to councilManagement
       set woodRationList (list )
       set herbsRationList (list )
       set foodRationList (list )
-      set waterProduction 150 / inhabitants
-      set woodProduction 150 / inhabitants
-      set herbsProduction 150 / inhabitants
-      set foodProduction 150 / inhabitants
     ]
   ]
 
   ;manage rations depending on current common resource and amount of people on the camp
-  ask campCouncils
+  ask CampCouncils
     [
       let inhabitants count humans with [survivalCamp = [id] of myself]
       (ifelse inhabitants > 0
@@ -351,6 +431,8 @@ end
 to humanBehaviourManagement
   ask humans
   [
+;    if not bussy?                                                                                            ;agent checks first if its bussy performing a durative action before considering others, helps avoid stuck agents due to trying to follow many actions
+;    [
     let humanId id
     let myWater item 0 backpack
     let myWood item 1 backpack
@@ -360,207 +442,221 @@ to humanBehaviourManagement
     let woodRationTaken? false
     let foodRationTaken? false
     let herbsRationTaken? false
-    let councilWaterJobs 0
-    let councilWoodJobs 0
-    let councilFoodJobs 0
-    let councilHerbsJobs 0
 
     let council campCouncils with [id = [survivalCamp] of myself]
     ask council
     [
-      set councilWaterJobs waterJobs
-      set councilWoodJobs woodJobs
-      set councilFoodJobs foodJobs
-      set councilHerbsJobs herbsJobs
       if member? humanId waterRationList
       [
-        set waterRationTaken? true
+        set waterRationTaken? false
       ]
       if member? humanId woodRationList
       [
-        set woodRationTaken? true
+        set woodRationTaken? false
       ]
       if member? humanId foodRationList
       [
-        set foodRationTaken? true
+        set foodRationTaken? false
       ]
       if member? humanId herbsRationList
       [
-        set herbsRationTaken? true
+        set herbsRationTaken? false
       ]
     ]
 
-
-    ifelse health < healthThreshold                                                                               ;if health level is below the threshold try to satisfy yout most urgent need
-    [
-      ifelse thirst > coldness and thirst > hunger and thirst > sickness and thirst > 2
+    (ifelse thirst >= needThreshold
       [
-        ifelse energy > workEnergy and councilWaterJobs > 0
-        [
-          workForResource 0
-        ]
-        [
-          ifelse waterRationTaken? = false
+        (ifelse energy > workEnergy
+          [
+              workForResource 0
+              set bussy? false
+          ]
+          energy <= workEnergy and waterRationTaken? = false
           [
             getResourceRation 0
+              set bussy? false
           ]
+          energy <= workEnergy and waterRationTaken? = true and myWater > 0
           [
-            ifelse myWater > 0
-            [
-              getResourceBackpack 0
-            ]
-            [
-              let caughtProbability caughtChance
-              let actionProbability random-float 101
-              let actionScore (moralLevel * 0.8) + (health * 0.2) + caughtProbability
-              let difference actionProbability - actionScore
-              ifelse actionScore < actionProbability
-              [
-                ifelse difference < 30
-                [
-                  getResourceRation 0
-                  set stolen stolen + 1
-                ]
-                [
-                  killForResources
-                ]
-              ]
+            getResourceBackpack 0
+              set bussy? false
+          ]
+          energy <= workEnergy and waterRationTaken? = true and myWater = 0
+          [
+            let caughtProbability caughtChance
+            let actionProbability random-float 300
+            let actionScore (moralLevel * 0.7) + (health * 0.3) + caughtProbability
+            let difference actionProbability - actionScore
+            (ifelse actionScore < actionProbability
+               [
+                 (ifelse difference < 30
+                   [
+                     getResourceRation 0
+                     set stolen stolen + 1
+                      set bussy? false
+                   ]
+                   difference >= 30
+                   [
+                     killForResources
+                      set bussy? false
+                   ]
+                 )
+               ]
+             actionScore >= actionProbability
               [
                 askHelp 0
+                  set bussy? false
               ]
-            ]
+             )
           ]
-        ]
+        )
       ]
-
+      coldness >= needThreshold
       [
-        ifelse coldness > thirst and coldness > hunger and coldness > sickness and coldness > 2
-        [
-          ifelse energy > workEnergy and councilWoodJobs > 0
+        (ifelse energy > workEnergy
           [
             workForResource 1
+              set bussy? false
           ]
+          energy <= workEnergy and woodRationTaken? = false
           [
-            ifelse woodRationTaken? = false
-            [
-              getResourceRation 1
-            ]
-            [
-              ifelse myWood > 0
-              [
-                getResourceBackpack 1
-              ]
-              [
-                let caughtProbability caughtChance
-                let actionProbability random-float 100
-                let actionScore (moralLevel * 0.8) + (health * 0.2) + caughtProbability
-                let difference actionProbability - actionScore
-                ifelse actionScore < actionProbability
-                [
-                  ifelse difference < 30
-                  [
-                    getResourceRation 1
-                    set stolen stolen + 1
-                  ]
-                  [
-                    killForResources
-                  ]
-                ]
-                [
-                  askHelp 1
-                ]
-              ]
-            ]
+            getResourceRation 1
+              set bussy? false
           ]
-        ]
-        [
-          ifelse hunger > thirst and hunger > coldness and hunger > sickness and hunger > 2
+          energy <= workEnergy and woodRationTaken? = true and myWood > 0
           [
-            ifelse energy > workEnergy and councilFoodJobs > 0
-            [
-              workForResource 2
-            ]
-            [
-              ifelse foodRationTaken? = false
-              [
-                getResourceRation 2
-              ]
-              [
-                ifelse myFood > 0
-                [
-                  getResourceBackpack 2
-                ]
-                [
-                  let caughtProbability caughtChance
-                  let actionProbability random-float 100
-                  let actionScore (moralLevel * 0.8) + (health * 0.2) + caughtProbability
-                  let difference actionProbability - actionScore
-                  ifelse actionScore < actionProbability
-                  [
-                    ifelse difference < 30
-                    [
-                      getResourceRation 2
-                      set stolen stolen + 1
-                    ]
-                    [
-                      killForResources
-                    ]
-                  ]
-                  [
-                    askHelp 2
-                  ]
-                ]
-              ]
-            ]
+            getResourceBackpack 1
+              set bussy? false
           ]
+          energy <= workEnergy and woodRationTaken? = true and myWood = 0
           [
-          if sickness > thirst and sickness > coldness and sickness > hunger and sickness > 2
-            [
-              ifelse energy > workEnergy and councilHerbsJobs > 0
+            let caughtProbability caughtChance
+            let actionProbability random-float 101
+            let actionScore (moralLevel * 0.7) + (health * 0.3) + caughtProbability
+            let difference actionProbability - actionScore
+            (ifelse actionScore < actionProbability
+               [
+                 (ifelse difference < 30
+                   [
+                     getResourceRation 1
+                     set stolen stolen + 1
+                      set bussy? false
+                   ]
+                   difference >= 30
+                   [
+                     killForResources
+                      set bussy? false
+                   ]
+                 )
+               ]
+             actionScore >= actionProbability
               [
-                workForResource 3
+                askHelp 1
+                  set bussy? false
               ]
-              [
-                ifelse herbsRationTaken? = false
-                [
-                  getResourceRation 3
-                ]
-                [
-                  ifelse myherbs > 0
-                  [
-                    getResourceBackpack 3
-                  ]
-                  [
-                    let caughtProbability caughtChance
-                    let actionProbability random-float 100
-                    let actionScore (moralLevel * 0.8) + (health * 0.2) + caughtProbability
-                    let difference actionProbability - actionScore
-                    ifelse actionScore < actionProbability
-                    [
-                      ifelse difference < 30
-                      [
-                        getResourceRation 3
-                        set stolen stolen + 1
-                      ]
-                      [
-                        killForResources
-                      ]
-                    ]
-                    [
-                      askHelp 3
-                    ]
-                  ]
-                ]
-              ]
-            ]
+             )
           ]
-        ]
+        )
       ]
+      hunger >= needThreshold
+      [
+        (ifelse energy > workEnergy
+          [
+            workForResource 2
+              set bussy? false
+          ]
+          energy <= workEnergy and foodRationTaken? = false
+          [
+            getResourceRation 2
+              set bussy? false
+          ]
+          energy <= workEnergy and foodRationTaken? and myFood > 0
+          [
+            getResourceBackpack 2
+              set bussy? false
+          ]
+          energy <= workEnergy and foodRationTaken? = true and myFood = 0
+          [
+            let caughtProbability caughtChance
+            let actionProbability random-float 101
+            let actionScore (moralLevel * 0.7) + (health * 0.3) + caughtProbability
+            let difference actionProbability - actionScore
+            (ifelse actionScore < actionProbability
+               [
+                 (ifelse difference < 30
+                   [
+                     getResourceRation 2
+                     set stolen stolen + 1
+                      set bussy? false
+                   ]
+                   difference >= 30
+                   [
+                     killForResources
+                      set bussy? false
+                   ]
+                 )
+               ]
+             actionScore >= actionProbability
+              [
+                askHelp 2
+                  set bussy? false
+              ]
+             )
+          ]
+        )
+      ]
+      sickness >= needThreshold
+      [
+        (ifelse energy > workEnergy
+          [
+            workForResource 3
+              set bussy? false
+          ]
+          energy <= workEnergy and herbsRationTaken? = false
+          [
+            getResourceRation 3
+              set bussy? false
+          ]
+          energy <= workEnergy and herbsRationTaken? = true and myHerbs > 0
+          [
+            getResourceBackpack 3
+              set bussy? false
+          ]
+          energy <= workEnergy and herbsRationTaken? = true and myHerbs = 0
+          [
+            let caughtProbability caughtChance
+            let actionProbability random-float 101
+            let actionScore (moralLevel * 0.7) + (health * 0.3) + caughtProbability
+            let difference actionProbability - actionScore
+            (ifelse actionScore < actionProbability
+               [
+                 (ifelse difference < 30
+                   [
+                     getResourceRation 3
+                     set stolen stolen + 1
+                      set bussy? false
+                   ]
+                   difference >= 30
+
+                   [
+                     killForResources
+                      set bussy? false
+                   ]
+                 )
+               ]
+             actionScore >= actionProbability
+              [
+                askHelp 3
+                  set bussy? false
+              ]
+             )
+          ]
+        )
+      ]
+    )
     ]
-    [
-      idleWalk
-    ]
-  ]
+;  ]
+
 end
 
 to basicHumanAttributeManagement
@@ -568,31 +664,19 @@ to basicHumanAttributeManagement
   [
     ask humans
     [
-      if energy > 0
-      [
-        set energy energy - 0.5
-      ]
+      set energy (energy - 1)
       if hunger < 10
       [
-        set hunger hunger + (random-float 1 * hungerFactor)
-      ]
-      if thirst < 10
-      [
-        set thirst thirst + ( random-float 1 * thirstFactor)
-      ]
-      if coldness < 10
-      [
-        set coldness coldness + (random-float 1 * coldnessFactor)
-      ]
-      if sickness < 10
-      [
-        set sickness sickness + (random-float 1 * sicknessFactor)
+        set hunger hunger + (random-float 1 * hungerFactor) + (energy / 10)
       ]
 
-      set health 90 + energy - hunger - coldness - thirst - sickness
+      set thirst thirst + (random-float 1 * thirstFactor)
+      set coldness coldness + (random-float 1 * coldnessFactor)
+      set sickness sickness + (random-float 1 * sicknessFactor)
+      set health health + energy - hunger - coldness - thirst - sickness
 
 
-      if health < healthThreshold                                                   ;if the humans health is lower than 70, the moral level starts lowering
+      if health < 70                                                   ;if the humans health is lower than 70, the moral level starts lowering
       [
         set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
       ]
@@ -608,7 +692,7 @@ end
 
 to workForResource[resource]                                                                                     ;implements the ability of humans to work for resources
   set bussy? true
-  let council one-of campCouncils with [id = [survivalCamp] of myself]
+  let council campCouncils with [id = [survivalCamp] of myself]
   let workplaceArea patches with [campId = [survivalCamp] of myself and workplace? = true]
   let randomStation one-of workplaceArea
   face randomStation
@@ -667,7 +751,6 @@ to workForResource[resource]                                                    
   ;set backpack replace-item resource backpack (res + toReceive)
   set energy energy - 0.5
   set bussy? false
-  set timesWorked timesWorked + 1
 end
 
 
@@ -677,7 +760,6 @@ to getResourceRation[resource]                                                  
   face council
   let ration 0
   let atCouncil? false
-  let myId id
 
   while [atCouncil? = false]
   [
@@ -694,39 +776,40 @@ to getResourceRation[resource]                                                  
     ]
     )
   ]
-  ask council
+  if atCouncil? = true
   [
-    (ifelse resource = 0
-      [
-        set ration waterRation
-        set commonWater commonWater - ration
-        set waterRationList lput myId waterRationList
-      ]
+    ask council
+    [
+      (ifelse resource = 0
+        [
+          set ration waterRation
+          set commonWater commonWater - ration
+          set waterRationList lput [id] of myself waterRationList
+        ]
       resource = 1
-      [
-        set ration woodRation
-        set commonWood commonWood - ration
-        set woodRationList lput myId woodRationList
-      ]
-      resource = 2
-      [
-        set ration foodRation
-        set commonFood commonFood - ration
-        set foodRationList lput myId foodRationList
-      ]
-      resource = 3
-      [
-        set ration herbsRation
-        set commonHerbs commonHerbs - ration
-        set herbsRationList lput myId herbsRationList
-    ])
+        [
+          set ration woodRation
+          set commonWood commonWood - ration
+          set woodRationList lput [id] of myself woodRationList
+        ]
+        resource = 2
+        [
+          set ration foodRation
+          set commonFood commonFood - ration
+          set foodRationList lput [id] of myself foodRationList
+        ]
+        resource = 3
+        [
+          set ration herbsRation
+          set commonHerbs commonHerbs - ration
+          set herbsRationList lput [id] of myself herbsRationList
+        ])
 
+    ]
+    let res item resource backpack
+    set backpack replace-item resource backpack (res + ration)
   ]
-  let res item resource backpack
-  set backpack replace-item resource backpack (res + ration)
-
   set bussy? false
-  set timesRation timesRation + 1
 end
 
 to getResourceBackpack[resource]                                                     ;implements the ability of humans to get resources backpack
@@ -735,34 +818,29 @@ to getResourceBackpack[resource]                                                
   let wood item 1 backpack
   let food item 2 backpack
   let herbs item 3 backpack
-  if resource = 0
-  [
-    set thirst thirst - water
-    set water 0
-    set waterConsumed waterConsumed + 1
-  ]
-  if resource = 1
-  [
-    set coldness coldness - wood
-    set wood 0
-    set woodConsumed woodConsumed + 1
-  ]
-  if resource = 2
-  [
-    set hunger hunger - food
-    set energy energy + food
-    set food 0
-    set foodConsumed foodConsumed + 1
-  ]
-  if resource = 3
-  [
-    set sickness sickness - herbs
-    set herbs 0
-    set herbsConsumed herbsConsumed + 1
-  ]
+  (ifelse resource = 0
+    [
+      set thirst thirst - water
+      set water 0
+    ]
+    resource = 1
+    [
+      set coldness coldness - wood
+      set wood 0
+    ]
+    resource = 2
+    [
+      set hunger hunger - food
+      set energy energy + food
+      set food 0
+    ]
+    resource = 3
+    [
+      set sickness sickness - herbs
+      set herbs 0
+  ])
   set backpack (list water wood food herbs)
   set bussy? false
-  set timesBackpack timesBackpack + 1
 end
 
 
@@ -800,6 +878,7 @@ to killForResources                                                             
 
   set bussy? true
   let closeMates other humans with [survivalCamp = [survivalCamp] of myself] in-radius 5
+  let target min-one-of closeMates [distance myself]
   let myWater item 0 backpack
   let myWood item 1 backpack
   let myFood item 2 backpack
@@ -809,23 +888,19 @@ to killForResources                                                             
   let food 0
   let herbs 0
 
-  if any? closeMates
+  ask target
   [
-    let target min-one-of closeMates [distance myself]
-    ask target
-    [
-      set water item 0 backpack
-      set wood item 1 backpack
-      set food item 2 backpack
-      set herbs item 3 backpack
-      set killed killed + 1
-      die
-    ]
+    set water item 0 backpack
+    set wood item 1 backpack
+    set food item 2 backpack
+    set herbs item 3 backpack
+    die
   ]
   set backpack replace-item 0 backpack (myWater + water)
   set backpack replace-item 1 backpack (myWood + wood)
   set backpack replace-item 2 backpack (myFood + food)
   set backpack replace-item 3 backpack (myHerbs + herbs)
+  set killed killed + 1
   set bussy? false
 end
 
@@ -840,6 +915,7 @@ to idleWalk
       forward 1
     ]
   ]
+
 end
 
 
@@ -915,7 +991,7 @@ end
 to-report caughtChance                                               ;adds a negative influence on immoral decisions by getting caught depending on the humans around the agent
   let witnesses other humans in-radius 5
   let prob 0
-  ask witnesses
+  foreach witnesses
   [
     ifelse prob < 25                                                 ;keep stacking the probability to a max of 25
     [
@@ -1044,25 +1120,6 @@ to-report avgHerbs
   report healthSum / humansAlive
 end
 
-to-report avgCouncilWaterReporter
-  let waterSum 0
-  let councils count campCouncils
-  ask campCouncils
-  [
-    set waterSum waterSum + commonWater
-  ]
-  report waterSum / councils
-end
-
-to-report avgCouncilWaterJobsReporter
-  let jobSum 0
-  let councils count campCouncils
-  ask campCouncils
-  [
-    set jobSum jobSum + waterJobs
-  ]
-  report jobSum / councils
-end
 
 to-report seasonReporter
   report season
@@ -1074,136 +1131,6 @@ end
 
 to-report timesStolen
   report stolen
-end
-
-to-report timesWaterConsumed
-  report waterConsumed
-end
-
-to-report timesWoodConsumed
-  report woodConsumed
-end
-
-to-report timesFoodConsumed
-  report foodConsumed
-end
-
-to-report timesHerbsConsumed
-  report herbsConsumed
-end
-
-to-report totalTimesWorked
-  report timesWorked
-end
-
-to-report totalTimesBackpack
-  report timesBackpack
-end
-
-to-report totalTimesRation
-  report timesRation
-end
-
-
-
-to findSurvivalCamp   ;code mostly taken from assignment 2
-  let maxCapacity (population / 4)                                      ;we keep the population of each camp equal to avoid unnecesary randomness in the experiment
-  (ifelse humansPlaced < maxCapacity                                    ;populate camp 1
-    [
-      let success false
-      while [success = false]
-      [
-        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 1]
-        let subPlace random 4
-        if [item subPlace subPatches] of place = nobody
-        [
-          ask place                    ;adds agent to one of the subpatches of a patch
-          [                            ;note that myself here refers to the agent that askes the patch to do something
-            set subPatches replace-item subPlace subPatches myself
-          ]
-          set survivalCamp [campId] of place
-          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
-          ifelse subPlace < 2
-          [ set ycor [pycor] of place + 0.25]
-          [ set ycor [pycor] of place - 0.25]
-          set success true
-          set humansPlaced humansPlaced + 1
-        ]
-      ]
-    ]
-
-    humansPlaced >= maxCapacity and humansPlaced < (maxCapacity * 2)   ;populate camp 2
-    [
-      let success false
-      while [success = false]
-      [
-        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 2]
-        let subPlace random 4
-        if [item subPlace subPatches] of place = nobody
-        [
-          ask place                    ;adds agent to one of the subpatches of a patch
-          [                            ;note that myself here refers to the agent that askes the patch to do something
-            set subPatches replace-item subPlace subPatches myself
-          ]
-          set survivalCamp [campId] of place
-          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
-          ifelse subPlace < 2
-          [ set ycor [pycor] of place + 0.25]
-          [ set ycor [pycor] of place - 0.25]
-          set success true
-          set humansPlaced humansPlaced + 1
-        ]
-      ]
-    ]
-
-    humansPlaced >= (maxCapacity * 2) and humansPlaced < (maxCapacity * 3)   ;populate camp 2
-    [
-      let success false
-      while [success = false]
-      [
-        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 3]
-        let subPlace random 4
-        if [item subPlace subPatches] of place = nobody
-        [
-          ask place                    ;adds agent to one of the subpatches of a patch
-          [                            ;note that myself here refers to the agent that askes the patch to do something
-            set subPatches replace-item subPlace subPatches myself
-          ]
-          set survivalCamp [campId] of place
-          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
-          ifelse subPlace < 2
-          [ set ycor [pycor] of place + 0.25]
-          [ set ycor [pycor] of place - 0.25]
-          set success true
-          set humansPlaced humansPlaced + 1
-        ]
-      ]
-    ]
-
-    humansPlaced >= (maxCapacity * 3) and humansPlaced < population       ;populate camp 2
-    [
-      let success false
-      while [success = false]
-      [
-        let place one-of patches with [camp? = true and count turtles-here < 4 and campId = 4]
-        let subPlace random 4
-        if [item subPlace subPatches] of place = nobody
-        [
-          ask place                    ;adds agent to one of the subpatches of a patch
-          [                            ;note that myself here refers to the agent that askes the patch to do something
-            set subPatches replace-item subPlace subPatches myself
-          ]
-          set survivalCamp [campId] of place
-          set xcor [pxcor] of place - 0.25 + 0.5 * (subplace mod 2)
-          ifelse subPlace < 2
-          [ set ycor [pycor] of place + 0.25]
-          [ set ycor [pycor] of place - 0.25]
-          set success true
-          set humansPlaced humansPlaced + 1
-        ]
-      ]
-    ]
-  )
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -1306,7 +1233,7 @@ seasonDuration
 seasonDuration
 10
 1200
-120.0
+100.0
 10
 1
 NIL
@@ -1469,7 +1396,7 @@ avgWater
 MONITOR
 739
 332
-837
+831
 377
 Average Food
 avgFood
@@ -1489,144 +1416,13 @@ avgWood
 11
 
 MONITOR
-741
-442
-837
-487
+742
+441
+838
+486
 Average Hebrs
 avgHerbs
 11
-1
-11
-
-MONITOR
-861
-280
-1004
-325
-Times Water Consumed
-timesWaterConsumed
-1
-1
-11
-
-MONITOR
-864
-337
-1005
-382
-Times Wood Consumed
-timesWoodConsumed
-17
-1
-11
-
-MONITOR
-863
-391
-999
-436
-Times Food Consumed
-timesFoodConsumed
-1
-1
-11
-
-MONITOR
-864
-448
-999
-493
-Times Herb Consumed
-timesHerbsConsumed
-1
-1
-11
-
-MONITOR
-1033
-284
-1181
-329
-Times Backpack Accesed
-totalTimesBackpack
-1
-1
-11
-
-MONITOR
-1035
-342
-1177
-387
-Times a Human Worked
-totalTimesWorked
-17
-1
-11
-
-MONITOR
-1036
-398
-1178
-443
-Times Ration Served
-totalTimesRation
-1
-1
-11
-
-TEXTBOX
-1028
-260
-1178
-278
-NIL
-11
-0.0
-1
-
-MONITOR
-1224
-287
-1340
-332
-Avg Council Water
-avgCouncilWaterReporter
-2
-1
-11
-
-MONITOR
-1353
-290
-1501
-335
-Avg Council Water Jobs 
-avgCouncilWaterJobs
-1
-1
-11
-
-MONITOR
-1250
-21
-1332
-66
-Immoral Left
-count humans with [morality = \"immoral\"]
-17
-1
-11
-
-MONITOR
-1255
-76
-1332
-121
-Normal Left
-count humans with [morality = \"moral\"]
-17
 1
 11
 

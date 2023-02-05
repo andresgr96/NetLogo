@@ -1,5 +1,5 @@
 globals [season worldTemperature hungerFactor sicknessFactor  thirstFactor  coldnessFactor storageCounter idCounter humansPlaced weekLength workEnergy initialJobAmount healthThreshold killed stolen waterConsumed woodConsumed foodConsumed herbsConsumed timesRation timesWorked timesBackpack avgCouncilWater avgCouncilWood avgCouncilFood avgCouncilHerbs
-avgCouncilWaterJobs avgCouncilWoodJobs avgCouncilFoodJobs avgCouncilHerbsJobs]  ;the factors will be used to manipulate the need for each resource that a human has
+  avgCouncilWaterJobs avgCouncilWoodJobs avgCouncilFoodJobs avgCouncilHerbsJobs startingMorals startingImmorals]  ;the factors will be used to manipulate the need for each resource that a human has
 breed [humans human]
 breed [campCouncils campCouncil]
 
@@ -22,7 +22,7 @@ humans-own
   survivalCamp                                                    ;the survival camp the human is part of
 ]
 
-                                                                  ;adding variables to patches in order for them to be able to act as survival camps too
+;adding variables to patches in order for them to be able to act as survival camps too
 patches-own
 [
   subPatches                                                      ;divides each patch into subpatches for precise human placement
@@ -91,6 +91,8 @@ to setup
   setupWorld
   setupHumans
   setupCouncils
+  set startingMorals (count humans with [morality = "moral"])
+  set startingImmorals (count humans with [morality = "immoral"])
 end
 
 to setupWorld
@@ -103,7 +105,7 @@ to setupWorld
   ]
 
 
-    ask patches with [pxcor < -10 and pxcor > -40 and pycor < 40 and pycor > 10]     ;set up survival camp 1
+  ask patches with [pxcor < -10 and pxcor > -40 and pycor < 40 and pycor > 10]     ;set up survival camp 1
   [
     set pcolor 69
     set camp? true
@@ -111,7 +113,7 @@ to setupWorld
     set storageId 1
   ]
 
-    ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 10]     ;set up survival camp 2
+  ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 10]     ;set up survival camp 2
   [
     set pcolor 69
     set camp? true
@@ -142,7 +144,7 @@ to setupWorld
     set workplace? true
   ]
 
-    ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 35]     ;set up workplace 2
+  ask patches with [pxcor < 40 and pxcor > 10 and pycor < 40 and pycor > 35]     ;set up workplace 2
   [
     set pcolor gray
     set workplace? true
@@ -196,11 +198,11 @@ to setupHumans
     set sickness 0
     ifelse morality = "immoral"
     [
-      set moralLevel 10 + (random (61 - 10))
+      set moralLevel 10 + (random (51 - 10))
       set color red
     ]
     [
-      set moralLevel 50 + (random (101 - 50))
+      set moralLevel 70 + (random (101 - 70))
       set color green
     ]
     set health 80 + energy - hunger  - coldness - thirst - sickness
@@ -214,37 +216,37 @@ end
 to setupCouncils
   create-campCouncils 4
   [
-  let idList (list 1 2 3 4)
-  let xcorList (list -25 25 -25 25 )
-  let ycorList (list 25 25 -25 -25)
-  let waterList (list 7 7 10 7)
-  let woodList (list 10 7 7 7)
-  let herbsList (list 7 7 7 10)
-  let foodList (list 7 10 7 7)
-  set shape "square"
-  set color gray
-  set size 5
-  set waterProduction item storageCounter waterList
-  set woodProduction item storageCounter woodList
-  set herbsProduction item storageCounter herbsList
-  set foodProduction item storageCounter foodList
-  set id item storageCounter idList
-  set xcor item storageCounter xcorList
-  set ycor item storageCounter ycorList
-  set numberOfHabitants population / 4
-  set commonWater 0
-  set commonWood 0
-  set commonFood 0
-  set commonHerbs 0
-  set waterJobs numberOfHabitants
-  set woodJobs numberOfHabitants
-  set foodJobs numberOfHabitants
-  set herbsJobs numberOfHabitants
-  set waterRationList (list )
-  set woodRationList (list )
-  set herbsRationList (list )
-  set foodRationList (list )
-  set storageCounter storageCounter + 1
+    let idList (list 1 2 3 4)
+    let xcorList (list -25 25 -25 25 )
+    let ycorList (list 25 25 -25 -25)
+    let waterList (list 7 7 10 7)
+    let woodList (list 10 7 7 7)
+    let herbsList (list 7 7 7 10)
+    let foodList (list 7 10 7 7)
+    set shape "square"
+    set color gray
+    set size 5
+    set waterProduction item storageCounter waterList
+    set woodProduction item storageCounter woodList
+    set herbsProduction item storageCounter herbsList
+    set foodProduction item storageCounter foodList
+    set id item storageCounter idList
+    set xcor item storageCounter xcorList
+    set ycor item storageCounter ycorList
+    set numberOfHabitants population / 4
+    set commonWater 0
+    set commonWood 0
+    set commonFood 0
+    set commonHerbs 0
+    set waterJobs numberOfHabitants
+    set woodJobs numberOfHabitants
+    set foodJobs numberOfHabitants
+    set herbsJobs numberOfHabitants
+    set waterRationList (list )
+    set woodRationList (list )
+    set herbsRationList (list )
+    set foodRationList (list )
+    set storageCounter storageCounter + 1
   ]
 end
 
@@ -253,51 +255,50 @@ to go
   basicHumanAttributeManagement
   humanBehaviourManagement
   councilManagement
-;  let totalPopulation count humans
-;  if totalPopulation < 25
-;  [stop]
-
+  let totalPopulation count humans
+  if totalPopulation < 45
+  [stop]
   tick
 end
 
 ;----------------------------------------------------------------------------------------------Management Systems----------------------------------------------------------------------------
 
 to seasonManagement
- let seasonflow (list "spring" "summer" "fall" "winter")
- if ticks mod seasonDuration = 0
- [
- (ifelse season = "spring"
-     [
-       set season "summer"
-       set thirstFactor 2
-       set sicknessFactor 1
-       set coldnessFactor 1
-       set hungerFactor 1
-     ]
-     season = "summer"
-     [
-       set season "fall"
-       set thirstFactor 1
-       set sicknessFactor 2
-       set coldnessFactor 1
-       set hungerFactor 1
-     ]
+  let seasonflow (list "spring" "summer" "fall" "winter")
+  if ticks mod seasonDuration = 0
+  [
+    (ifelse season = "spring"
+      [
+        set season "summer"
+        set thirstFactor 2
+        set sicknessFactor 1
+        set coldnessFactor 1
+        set hungerFactor 1
+      ]
+      season = "summer"
+      [
+        set season "fall"
+        set thirstFactor 1
+        set sicknessFactor 2
+        set coldnessFactor 1
+        set hungerFactor 1
+      ]
       season = "fall"
-     [
-       set season "winter"
-       set thirstFactor 1
-       set sicknessFactor 1
-       set coldnessFactor 2
-       set hungerFactor 1
-     ]
+      [
+        set season "winter"
+        set thirstFactor 1
+        set sicknessFactor 1
+        set coldnessFactor 2
+        set hungerFactor 1
+      ]
       season = "winter"
-     [
-       set season "spring"
-       set thirstFactor 1
-       set sicknessFactor 1
-       set coldnessFactor 1
-       set hungerFactor 2
-     ]
+      [
+        set season "spring"
+        set thirstFactor 1
+        set sicknessFactor 1
+        set coldnessFactor 1
+        set hungerFactor 2
+      ]
     )
   ]
 end
@@ -326,24 +327,24 @@ to councilManagement
 
   ;manage rations depending on current common resource and amount of people on the camp
   ask campCouncils
-    [
-      let inhabitants count humans with [survivalCamp = [id] of myself]
-      (ifelse inhabitants > 0
-        [
-          set waterRation (commonWater / inhabitants) / 4
-          set woodRation (commonWood / inhabitants) / 4
-          set foodRation (commonFood / inhabitants) / 4
-          set herbsRation (commonHerbs / inhabitants) / 4
-        ]
-        inhabitants <= 0
-        [
-          set waterRation 0
-          set woodRation 0
-          set foodRation 0
-          set herbsRation 0
-        ]
-      )
-    ]
+  [
+    let inhabitants count humans with [survivalCamp = [id] of myself]
+    (ifelse inhabitants > 0
+      [
+        set waterRation (commonWater / inhabitants) / 4
+        set woodRation (commonWood / inhabitants) / 4
+        set foodRation (commonFood / inhabitants) / 4
+        set herbsRation (commonHerbs / inhabitants) / 4
+      ]
+      inhabitants <= 0
+      [
+        set waterRation 0
+        set woodRation 0
+        set foodRation 0
+        set herbsRation 0
+      ]
+    )
+  ]
 end
 
 
@@ -366,7 +367,7 @@ to humanBehaviourManagement
     let councilHerbsJobs 0
 
     let council campCouncils with [id = [survivalCamp] of myself]
-    ask council
+    ask council                                                                                                ;check which lists the human is part of
     [
       set councilWaterJobs waterJobs
       set councilWoodJobs woodJobs
@@ -514,7 +515,7 @@ to humanBehaviourManagement
             ]
           ]
           [
-          if sickness > thirst and sickness > coldness and sickness > hunger and sickness > 2
+            if sickness > thirst and sickness > coldness and sickness > hunger and sickness > 2
             [
               ifelse energy > workEnergy and councilHerbsJobs > 0
               [
@@ -557,6 +558,7 @@ to humanBehaviourManagement
         ]
       ]
     ]
+    ;if satiesfied then walk around peacefully
     [
       idleWalk
     ]
@@ -592,9 +594,9 @@ to basicHumanAttributeManagement
       set health 90 + energy - hunger - coldness - thirst - sickness
 
 
-      if health < healthThreshold                                                   ;if the humans health is lower than 70, the moral level starts lowering
+      if health < healthThreshold                                                   ;if the humans health is lower than the healthy treshold, the moral level starts lowering
       [
-        set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the halth of the human
+        set moralLevel moralLevel - (1 - (health * 0.01))              ;how much the moral level lowers depends on the helth of the human
       ]
       if health < 30
       [
@@ -684,14 +686,14 @@ to getResourceRation[resource]                                                  
     let newX precision (xcor + sin heading * 0.5) 2
     let newY precision (ycor + cos heading * 0.5) 2
     (ifelse not any? campCouncils-on patch-ahead 5
-    [
-      set xcor newX
-      set ycor newY
-    ]
-    any? campCouncils-on patch-ahead 5
-    [
+      [
+        set xcor newX
+        set ycor newY
+      ]
+      any? campCouncils-on patch-ahead 5
+      [
         set atCouncil? true
-    ]
+      ]
     )
   ]
   ask council
@@ -854,7 +856,7 @@ to getPunished[crime]                                                           
   let myHerbs item 3 backpack
 
   (ifelse crime = "stealing"                                                               ;if they are caught stealing, they loose all their resources
-  [
+    [
       ask council
       [
         set commonWater commonWater + myWater
@@ -866,8 +868,8 @@ to getPunished[crime]                                                           
       set backpack replace-item 1 backpack 0
       set backpack replace-item 2 backpack 0
       set backpack replace-item 3 backpack 0
-  ]
-  crime = "kiling"                                                                         ;if they are caught killing, they are executed and their resources go to the council
+    ]
+    crime = "kiling"                                                                         ;if they are caught killing, they are executed and their resources go to the council
     [
       ask council
       [
@@ -877,7 +879,7 @@ to getPunished[crime]                                                           
         set commonHerbs commonHerbs + myHerbs
       ]
       die
-  ]
+    ]
   )
 
 end
@@ -898,16 +900,16 @@ to-report getAge                                                   ;reports age 
     ]
     under40 > n and n > under20
     [
-    set ageI 20 + (random (39 - 20))
+      set ageI 20 + (random (39 - 20))
     ]
     under60 > n  and n > under40
     [
-    set ageI 40 + (random (59 - 40))
+      set ageI 40 + (random (59 - 40))
     ]
     under80 > n and n > under60
     [
-    set ageI 60 + (random (79 - 60))
-    ])
+      set ageI 60 + (random (79 - 60))
+  ])
   report ageI
 end
 
@@ -1062,6 +1064,16 @@ to-report avgCouncilWaterJobsReporter
     set jobSum jobSum + waterJobs
   ]
   report jobSum / councils
+end
+
+to-report moralsurvivalRate
+  let morals count humans with [morality = "moral"]
+  report (morals / startingMorals ) * 100
+end
+
+to-report immoralSurvivalRate
+  let morals count humans with [morality = "immoral"]
+  report (morals / startingImmorals ) * 100
 end
 
 to-report seasonReporter
@@ -1609,10 +1621,10 @@ avgCouncilWaterJobs
 11
 
 MONITOR
-1250
-21
-1332
-66
+1203
+10
+1285
+55
 Immoral Left
 count humans with [morality = \"immoral\"]
 17
@@ -1620,13 +1632,35 @@ count humans with [morality = \"immoral\"]
 11
 
 MONITOR
-1255
-76
-1332
-121
+1208
+65
+1285
+110
 Normal Left
 count humans with [morality = \"moral\"]
 17
+1
+11
+
+MONITOR
+1294
+66
+1414
+111
+Moral Survival Rate
+moralsurvivalRate
+1
+1
+11
+
+MONITOR
+1293
+10
+1420
+55
+ImmoralSurvivalRate
+immoralsurvivalRate
+1
 1
 11
 
